@@ -24,6 +24,13 @@ input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
 .kpi b{display:block;font-size:26px;margin-top:2px}.kpi span{color:var(--mu);font-size:12px}
 .tw{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mu);padding:10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}tr:last-child td{border:0}
+.pill{padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;background:var(--pr2);color:var(--pr)}
+.Positive,.ok{background:#12a36b22;color:var(--ok)}.Negative,.Overdue,.Pending{background:#d83b4b22;color:var(--er)}.Due,.Busy,.Neutral{background:#e99a0022;color:var(--wa)}
+.bar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12px}.bar i{display:block;height:8px;border-radius:4px;background:var(--pr)}.bar em{width:130px;font-style:normal;color:var(--mu)}
+dialog{border:0;border-radius:14px;padding:18px;width:min(460px,94vw);background:var(--card);color:var(--tx)}
 .chips.w{grid-template-columns:1fr}.chips.w .chip span{text-align:left;padding:9px 12px}.chips{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.chip{margin:0;font-size:14px;color:var(--tx)}.chip input{display:none}.chip span{display:block;text-align:center;padding:9px 0;border:1px solid var(--bd);border-radius:8px;cursor:pointer}.chip input:checked+span{background:var(--pr);color:#fff;border-color:var(--pr)}
 dialog{max-height:90vh;overflow:auto}dialog::backdrop{background:#0009}
 label{display:block;font-size:12px;color:var(--mu);margin:9px 0 3px}dialog input,dialog select,dialog textarea{width:100%}
@@ -45,12 +52,9 @@ const NOTMET=['Busy','Phone Busy/Not reachable','Wrong Number','Number not exist
 const DROP=['Wrong Number','Number not existing','Gentile - Not interested','Not Interested','Withdrew from Sathvartha'],CLOSED=DROP.concat('3-Months Completed');
 const CAMPS=['Youth Camp',"Children's Camp / Vacation Bible School",'Family Camp',"Women's Camp","Men's Camp",'Student / Exam Prayer Camp','Music / Choir Camp','Sports Camp','Other'];
 const FSRC=['Fresh Contacts','Home Mission','Youth BAS_WCC','Direct Follow Up'];
-const FTOP=['General Talk','Love of God The Father, that experienced',"Holy Mother's messages",'Different Approach','Second Coming Of Jesus Christ and Prophets','Rosary: Brief Description Of Its Origin and Importance','Signs Of Times Connecting To Sathvartha','Love Jesus Christ','Love Of Holy Mother','Building Relationships','Introduction To The Good News','Importance of Listening To The Topics As A Family','Assessing For Love in The Family, Grasping power, Thirst For WoG, Trust In God'];
-const SECS=[['1','WOGT'],['2',"GOD'S PLAN"],['3','SALVATION'],['4','YC IN 1ST COMING'],['5','FATHER GOD'],['6','SATHVARTHA'],['7','YC COMES TO EARTH'],['8','YC COMES TO THE PEOPLE GATHERED TOGETHER'],['9',"VERY FEW WILL BELIEVE IN YC'S 2ND COMING"],['10','SIGNS OF TIMES_WHAT IS_EAGERLY WAITING'],['10.1','SIGNS OF THE SECONDCOMING_FALSE CHRISTS'],['10.2','SOT VERI CHIP'],['11','DETERMINING THE SOG HAS COME BACK'],['12','NEETHI'],['13','HOLY MOTHER'],['14','BOOKS OF BIBLE'],['15','1ST COMMANDMENT_AGAINST CHURCH'],['16','HOW SHOULD ONE LISTEN TO THE SATHVARTHA']];
-const LANG=['English','Malayalam','Kannada','Tamil','Telugu','Hindi','Konkani','Oriya'];
-const TYPE=['Call','Visit','Call + Visit'];
-const STG=['Ready For Sathvartha','Attended Sathvartha','In Fellowship'];
-const FELS=['','Whitefield','Marathahalli','HAL'];
+home:{t:'Home Missions',f:[['Date','date'],['Language','s',LANG],['Name','text'],['Mobile','tel'],['Name_Presenter','ev'],['Fellowship_Area','s',FELS],['Contact_ID','id']]},
+sath:{t:'Sathvartha Journey',f:[['Contact_ID','cid'],['Stage','s',STG],['Date','date'],['Name','text'],['Mobile','tel'],['Fellowship','s',FELS],['Evg','ev']]},
+travel:{t:'Travel Details',f:[['Sl_No','sl'],['Fellowship_Area_Name','s',FELS],['Name','text'],['Age','number'],['Gender','s',['','Male','Female','Other']],['Address','text'],['Phone_No','tel'],['Reference_Name','text'],['First_Coming_Evangelist','ev'],['Second_Coming_Evangelist','ev'],['Denomination','text'],['Religion','text'],['Onward_Train_Details','text'],['Arrival_Date_Time','dt'],['Return_Train_Details','text'],['Departure_Date_Time','dt'],['Language','s',['',...LANG]],['Contact_ID','cid']]}
 };
 let MANAGER=false,COORD=false;const LF=()=>cfg.scope||(COORD?cfg.fel:''); // chosen at runtime: team by default, manager after PIN login (Sync tab)
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -72,14 +76,9 @@ const iso=o=>{const d=new Date();d.setDate(d.getDate()+o);return d.toISOString()
 const days=d=>d?Math.floor((Date.now()-new Date(d))/864e5):null;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fOf=r=>r.Fellowship||r.Fellowship_Area||r.Fellowship_Area_Name||'';
-function nextId(){let n=0;KEYS.forEach(k=>db[k].forEach(r=>{const m=/^ZS-(\d+)/.exec(r.Contact_ID||'');if(m)n=Math.max(n,+m[1])}));const ini=(cfg.me||'').split(/\s+/).map(w=>w[0]||'').join('').toUpperCase();return'ZS-'+String(n+1).padStart(4,'0')+(MANAGER&&!cfg.scope?'':'-'+(LF()?LF()[0]:'')+ini)}
+const REFP={'Tele call':'TC','Surveys':'SV','D2D':'DD','Card Service':'CS','Home Mission Invite':'HI','Personal Reference':'PR','Hospital Service':'HS','School Service':'SS','Apartment Service':'AS','Bible Quiz':'BQ','Music Ministry':'MM','Camps':'CM'};
+function nextId(ref,pre){pre=pre||REFP[ref]||'ZS';let n=0;KEYS.forEach(k=>db[k].forEach(r=>{const m=/^([A-Z]+)[-](\d+)/.exec(r.Contact_ID||'');if(m&&m[1]==pre)n=Math.max(n,+m[2])}));const ini=(cfg.me||'').split(/\s+/).map(w=>w[0]||'').join('').toUpperCase();return pre+''+String(n+1).padStart(4,'0')+(MANAGER&&!cfg.scope?'':'-'+(LF()?LF()[0]:'')+ini)}
 function level(d){return d==null?'—':d>=30?'Pending':d>=14?'Overdue':d>=7?'Due':'On track'}
-function contacts(){const m={};KEYS.forEach(k=>db[k].forEach(r=>{const id=r.Contact_ID;if(!id)return;const c=m[id]||(m[id]={Contact_ID:id,Name:'',Mobile:'',Fellowship:'',Evg:'',Last_Activity:''});
-['Name','Mobile','Evg','Language','Referred_By','Referrer_Mobile'].forEach(x=>{if(r[x]&&!c[x])c[x]=r[x]});if(fOf(r)&&!c.Fellowship)c.Fellowship=fOf(r);
-const d=r.Date||r.Attended_Date;if(d&&d>c.Last_Activity)c.Last_Activity=d;if(r.Status&&(d||'')>=(c.SD||'')){c.Status=r.Status;c.SD=d||''}}));
-return Object.values(m).map(c=>{c.Days_Since=days(c.Last_Activity);c.Level=CLOSED.includes(c.Status)?'—':c.Status=='Pending'?'Pending':level(c.Days_Since);return c}).sort((a,b)=>(b.Days_Since??-1)-(a.Days_Since??-1))}
-function dash(){
-const P=[['day','Today'],['week','7 days'],['month','This month'],['all','All time']];
 const K=[['New Appointments Met',fl(db.fresh).filter(r=>inPer(r.Date)&&met(r)).length],
 ['Follow-up Appointments Met',fl(db.follow).filter(r=>inPer(r.Date)&&met(r)).length],
 ['Home Missions Conducted',new Set(fl(db.home).filter(r=>inPer(r.Date)).map(r=>[r.Date,r.Name_Presenter,r.Fellowship_Area].join('|'))).size],
@@ -105,6 +104,10 @@ const rows=db[tab].map((r,i)=>({...r,_i:i})).filter(r=>(tab=='lib'||(!fel||fOf(r
 return`<div class="row"><input placeholder="Search…" value="${esc(q)}" oninput="q=this.value.toLowerCase();render(1)" style="flex:1;min-width:140px">${filt()}<button class="btn g" onclick="csv('${tab}')">Export CSV</button><button class="btn g" onclick="impTab='${tab}';$('#imp').click()">Import CSV</button><button class="btn g" onclick="csv('${tab}',1)">Template</button><button class="btn" onclick="openF('${tab}')">+ Add</button></div>${tab=='travel'?tbar():''}${table(cols,rows,1)}`}
 function rem(){const cs=contacts().filter(c=>(!fel||c.Fellowship==fel)&&(!evf||c.Evg==evf)&&c.Level!='On track'&&c.Level!='—');
 const rows=cs.map(c=>c);
+const t=<div class="row">${filt()}<button class="btn g" onclick="csv('rem')">Export CSV</button></div>${nudges(rows)}+(rows.length?<div class="tw"><table><tr>${['Contact ID','Name','Mobile','Fellowship','Evg','Last Activity','Days Since','Level'].map(h=><th>${h}</th>).join('')}<th></th></tr>${rows.map(c=><tr><td>${c.Contact_ID}</td><td>${esc(c.Name)}</td><td>${esc(c.Mobile)}</td><td>${esc(c.Fellowship)}</td><td>${esc(c.Evg)}</td><td>${c.Last_Activity}</td><td>${c.Days_Since}</td><td><span class="pill ${c.Level}">${c.Level}</span></td><td>${c.Mobile?<a class="btn g s" style="text-decoration:none" target="_blank" href="https://wa.me/${c.Mobile.replace(/\D/g,'')}?text=${encodeURIComponent('Hello '+c.Name+', we would love to connect with you again.')}">WhatsApp</a>:''} ${evN(c)}</td></tr>).join('')}</table></div>:'<div class="card empty">🎉 Everyone is up to date.</div>');return t}
+let gran='month';
+function buckets(){const t=new Date(iso(0)+'T00:00:00Z'),B=[],D=d=>d.toISOString().slice(0,10);
+for(let i=5;i>=0;i--){let s,e,l;
 if(gran=='week'){s=new Date(t);s.setUTCDate(t.getUTCDate()-((t.getUTCDay()+6)%7)-7*i);e=new Date(s);e.setUTCDate(s.getUTCDate()+6);l='Wk '+s.toUTCString().slice(5,11)}
 else{const n=gran=='month'?1:3,mo=gran=='month'?t.getUTCMonth():Math.floor(t.getUTCMonth()/3)*3;s=new Date(Date.UTC(t.getUTCFullYear(),mo-n*i,1));e=new Date(Date.UTC(s.getUTCFullYear(),s.getUTCMonth()+n,0));l=gran=='month'?s.toUTCString().slice(8,16):'Q'+(Math.floor(s.getUTCMonth()/3)+1)+' '+s.getUTCFullYear()}
 B.push({s:D(s),e:D(e),l,cur:i==0})}return B}
@@ -129,12 +132,6 @@ function evTable(){
 const fr=a=>a.filter(r=>!fel||fOf(r)==fel),cs=contacts().filter(c=>!fel||c.Fellowship==fel);
 const names=[...new Set(db.evs.concat(...[db.fresh,db.follow,db.content].map(a=>a.map(evOf))).filter(Boolean))];
 const rows=names.map(n=>{const L=l=>cs.filter(c=>c.Evg==n&&c.Level==l).length;return{n,a:fr(db.fresh).filter(r=>evOf(r)==n&&inPer(r.Date)&&met(r)).length,b:fr(db.follow).filter(r=>evOf(r)==n&&inPer(r.Date)&&met(r)).length,c:fr(db.content).filter(r=>evOf(r)==n&&inPer(r.Date)).length,d:L('Due'),o:L('Overdue'),p:L('Pending')}}).filter(r=>r.a+r.b+r.c+r.d+r.o+r.p>0).sort((x,y)=>(y.p*3+y.o*2+y.d)-(x.p*3+x.o*2+x.d)||(y.a+y.b)-(x.a+x.b));
-const pill=(v,k)=>v?<span class="pill ${k}">${v}</span>:'<span style="color:var(--mu)">0</span>';
-return`<div class="card" style="padding:0;margin-bottom:14px"><h2 style="padding:14px 14px 0">By evangelist <span style="font-weight:400;color:var(--mu);font-size:12px">· activity in the selected period · follow-up status as of now</span></h2><div class="tw" style="border:0"><table style="min-width:520px"><tr><th>Evangelist</th><th>New</th><th>Follow-ups</th><th>Shares</th><th>Due</th><th>Overdue</th><th>Pending</th></tr>${rows.map(r=><tr><td>${esc(r.n)}</td><td>${r.a}</td><td>${r.b}</td><td>${r.c}</td><td>${pill(r.d,'Due')}</td><td>${pill(r.o,'Overdue')}</td><td>${pill(r.p,'Pending')}</td></tr>).join('')||'<tr><td colspan="7" class="empty">No activity</td></tr>'}</table></div></div>`}
-function trend14(){
-const D=[];for(let i=13;i>=0;i--)D.push(iso(-i));
-const n=D.map(d=>fl(db.fresh).filter(r=>r.Date==d).length+fl(db.follow).filter(r=>r.Date==d).length),m=Math.max(1,...n);
-return`<div class="card" style="margin-bottom:14px"><h2>Last 14 days · contacts + follow-ups</h2><div class="trend">${D.map((d,i)=><div title="${d}: ${n[i]}"><span>${n[i]||''}</span><i style="height:${n[i]/m*80}%"></i><em style="font-style:normal">${d.slice(8)}</em></div>).join('')}</div></div>`}
 function myDay(){
 if(!cfg.me)return`<div class="card"><h2>Who are you?</h2><p style="color:var(--mu);font-size:12px;margin:0 0 8px">Pick your name once. Your follow-ups, reminders and new entries will be set to you.</p>${db.evs.length?<select id="me_s" style="width:100%"><option value=""></option>${db.evs.map(n=><option>${esc(n)}</option>).join('')}</select><div class="row" style="margin:14px 0 0"><button class="btn" onclick="setMe()">Continue</button></div>:'<div class="empty">No evangelists in the list yet — open the Evangelists tab to add or upload them.</div>'}</div>`;
 const me=cfg.me,td=iso(0),mo=td.slice(0,7),mine=a=>a.filter(r=>evOf(r)==me),F=mine(db.fresh),U=mine(db.follow),S=mine(db.content);
@@ -162,22 +159,11 @@ try{const data=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(f
 const cl=r=>{const ids=String(r.Library_Items||'').split(/[^A-Za-z0-9-]+/).filter(Boolean),it=db.lib.filter(x=>ids.includes(x.Content_ID));if(!it.length||!r.Mobile)return'';return`<a class="btn g s" style="text-decoration:none" target="_blank" href="https://wa.me/${wa(r.Mobile)}?text=${encodeURIComponent(it.map(x=>'*'+x.Title+'*\n'+x.Content).join('\n\n'))}">Send</a> `};
 
 /* ---- travel: manager check before sending ---- */
-async function mailTravel(ids){const to=(cfg.em||'').trim();if(!to){alert('Enter the coordinator email first');return}
-const L=db.travel.filter(t=>t.Checked=='Yes'&&(!ids||ids.includes(String(t._id))));if(!L.length){alert('No checked records to send');return}
-if(!cfg.api){location.href='mailto:'+to+'?subject='+encodeURIComponent('Sathvartha travel details')+'&body='+encodeURIComponent(L.map(tmsg).join('\n\n---\n\n'));return}
-if(!MPIN){const p=prompt('Manager PIN (needed to send email)');if(!p)return;MPIN=p}
-const body=L.map(t=>tmsg(t).replace(/\*/g,'')).join('\n\n----------\n\n');
-try{await api({pin:MPIN,mail:{to,subject:'Sathvartha travel details'+(L.length==1?' – '+L[0].Name:' ('+L.length+')'),body}});flash='Email sent to '+to+' ('+L.length+' record'+(L.length>1?'s':'')+')';render()}
-catch(e){if(/PIN/.test(e.message))MPIN='';alert('Email not sent: '+e.message+(/PIN/.test(e.message)?'':'\n\nIf this says "Authorization" or "permission", re-deploy the Apps Script (see steps) and approve Gmail access.'))}}
-const tl=r=>{
-if(r.Checked!='Yes')return MANAGER?`<button class="btn s" onclick="chk('${r._id}')">✓ Check</button> `:'<span style="color:var(--mu);font-size:12px">awaiting manager check</span> ';
-const m=encodeURIComponent(tmsg(r));
-return`<a class="btn g s" style="text-decoration:none" target="_blank" href="https://wa.me/${cfg.wa||''}?text=${m}">WhatsApp</a> <button class="btn g s" onclick="mailTravel(['${r._id}'])">Email</button> ${MANAGER?<button class="btn g s" onclick="chk('${r._id}',1)">Uncheck</button> `:''}};
-function chk(id,un){const t=db.travel.find(x=>x._id==id);if(!t)return;
-if(un){t.Checked='';t.Checked_By='';t.Checked_On=''}
-else{const miss=['Age','Gender','Address','Phone_No','Onward_Train_Details','Arrival_Date_Time','Return_Train_Details','Departure_Date_Time'].filter(k=>!t[k]);if(miss.length&&!confirm('Still empty: '+miss.map(x=>x.replace(/_/g,' ')).join(', ')+'.\nMark as checked anyway?'))return;t.Checked='Yes';t.Checked_By='Manager';t.Checked_On=iso(0)}
-persist();render()}
-
+const start=d('In Fellowship')||d('Attended Sathvartha'),due=start?add3(start):'';return{rdy:has('Ready For Sathvartha'),att:has('Attended Sathvartha'),fel:has('In Fellowship'),start,due,done:!!start&&due<=iso(0)}}
+function ticks(){
+const cs=contacts().filter(c=>(!fel||c.Fellowship==fel)&&(!evf||c.Evg==evf)&&(!q||JSON.stringify(c).toLowerCase().includes(q)));
+const S=['Ready For Sathvartha','Attended Sathvartha','In Fellowship'];
+return`<div class="row"><input placeholder="Search…" value="${esc(q)}" oninput="q=this.value.toLowerCase();render(1)" style="flex:1;min-width:140px">${filt()}</div>
 <div class="card" style="margin-bottom:12px;color:var(--mu);font-size:12px">Tick a box and enter the date. <b>Ready</b> creates the Travel Details record. <b>Attended</b> and <b>In Fellowship</b> feed the reports; “Completed 3 months” is worked out automatically from the date the person joined Fellowship (or attended Sathvartha).</div>
 ${cs.length?<div class="tw"><table><tr><th>Contact</th><th>Ready</th><th>Attended</th><th>In Fellowship</th><th>3 months</th></tr>${cs.map(c=>{const m=mile(c.Contact_ID),v=[m.rdy,m.att,m.fel];return<tr><td><b>${esc(c.Name||c.Contact_ID)}</b><br><small style="color:var(--mu)">${c.Contact_ID} · ${esc(c.Fellowship)} · ${esc(c.Evg)}</small></td>${S.map((s,i)=><td><input type="checkbox" style="width:22px;height:22px" ${v[i]?'checked':''} onchange="tick('${c.Contact_ID}','${s}',this.checked)"></td>).join('')}<td>${m.done?'<span class="pill ok">✓ Completed</span>':m.start?'Due '+m.due:'—'}</td></tr>}).join('')}</table></div>:'<div class="card empty">No contacts yet.</div>'}`}
 function tick(id,stage,on){const c=contacts().find(x=>x.Contact_ID==id);if(!c)return;
@@ -224,10 +210,6 @@ function sortEv(){db.evs.sort((a,b)=>a.localeCompare(b));persist()}
 function addEv(){const v=$('#evn').value.trim();if(v&&!db.evs.includes(v)){db.evs.push(v);sortEv()}render()}
 function delEv(i){db.evs.splice(i,1);persist();render()}
 function pullEv(){let n=0;KEYS.forEach(k=>db[k].forEach(r=>['Evg','Name_Presenter','First_Coming_Evangelist','Second_Coming_Evangelist'].forEach(f=>{const v=(r[f]||'').trim();if(v&&!db.evs.includes(v)){db.evs.push(v);n++}})));sortEv();flash='Added '+n+' name(s) from existing records';render()}
-async function onImp(inp){const f=inp.files[0];inp.value='';if(!f)return;const R=parseCSV((await f.text()).replace(/^\uFEFF/,''));
-if(impTab=='evs'){let n=0;R.forEach((r,i)=>{const v=(r[0]||'').trim();if(!v||(i==0&&/^(name|evangelist|evangelists|evangelist name)$/i.test(v)))return;if(!db.evs.includes(v)){db.evs.push(v);n++}});sortEv();flash='Imported '+n+' evangelist(s)'}
-let snap={},busy=0,syncMsg='';
-try{snap=JSON.parse(localStorage.getItem('zs_snap'))||{}}catch(e){}
 const SK=[...KEYS,'evs'],rowsOf=k=>k=='evs'?db.evs.map(n=>({_id:'ev:'+n,Name:n,Email:((db.evm||{})[n]||{}).Email||'',Mobile:((db.evm||{})[n]||{}).Mobile||''})):db[k];
 const hs=t=>{let h=5381;for(let i=0;i<t.length;i++)h=(h*33^t.charCodeAt(i))>>>0;return h.toString(36)};
 function snapshot(){snap={};SK.forEach(k=>{snap[k]={};rowsOf(k).forEach(r=>snap[k][r._id]=hs(JSON.stringify(r)))});try{localStorage.setItem('zs_snap',JSON.stringify(snap))}catch(e){}}
@@ -253,6 +235,13 @@ const intro='<p style="color:var(--mu);font-size:12px;margin:0 0 8px">Each fello
 if(!FK)return`<div class="card" style="margin-top:12px"><h2>Fellowship team links</h2>${intro}<button class="btn" onclick="getKeys()">Show fellowship links</button></div>`;
 return`<div class="card" style="margin-top:12px"><h2>Fellowship team links</h2>${intro}${FELS.slice(1).map(f=>{const L=flink(f);return`<div style="margin:12px 0 0"><b>${esc(f)}</b><input id="fl_${f}" readonly style="width:100%;margin-top:4px" value="${esc(L)}" onfocus="this.select()"><div class="row" style="margin:8px 0 0"><button class="btn" onclick="copyF('${f}')">Copy link</button><a class="btn g" style="text-decoration:none" target="_blank" href="https://wa.me/?text=${encodeURIComponent('Zion Sathvartha outreach app ('+f+') — open this link, pick your name, and start entering contacts:\n'+L)}">Share on WhatsApp</a></div></div>}).join('')}</div>}
 function syncTab00(){return`<div class="card"><h2>Google Sheets sync</h2><p style="color:var(--mu);font-size:12px;margin:0 0 6px">Paste the web app URL and secret key from your Apps Script deployment. If the sheet already has data it replaces this device's data; if the sheet is empty, this device's data is uploaded.</p><label>Web app URL</label><input id="sy_u" style="width:100%" value="${esc(cfg.api||'')}" placeholder="https://script.google.com/macros/s/…/exec"><label>Secret key</label><input id="sy_k" type="password" style="width:100%" value="${esc(cfg.key||'')}"><div class="row" style="margin:14px 0 8px"><button class="btn" onclick="connect()">Save &amp; connect</button><button class="btn g" onclick="pullNow()">Sync now</button><button class="btn g" onclick="upNow()">Re-upload all</button>${cfg.api?'<button class="btn g" onclick="disc()">Disconnect</button>':''}</div><div id="sm" style="font-size:12px;color:var(--mu)">${esc(syncMsg)||(cfg.api?'Connected':'Not connected')}</div></div>`}
+function roleCard(){return`<div class="card" style="margin-top:12px"><h2>${COORD?esc(cfg.fel)+' coordinator view is on':MANAGER?'Manager view is on':'Manager access'}</h2><p style="color:var(--mu);font-size:12px;margin:0 0 10px">${COORD?'This device shows only the '+esc(cfg.fel)+' fellowship: Dashboard, Reports and the travel check.':MANAGER?'This device shows the Dashboard, Reports and the travel ✓ check for all fellowships.':'Managers and fellowship coordinators: enter your PIN to open the Dashboard, Reports and the travel check on this device.'}</p>${MANAGER?'<button class="btn g" onclick="mgrOut()">Switch to team view</button>':'<button class="btn" onclick="mgrIn()">Manager login</button>'}</div>`}
+let MPIN='';
+function clr(){if(!clrArm){clrArm=1;$('#clr').textContent='Tap again to erase all records';setTimeout(()=>{clrArm=0;const b=$('#clr');if(b)b.textContent='Clear all data'},4000);return}clrArm=0;['fresh','follow','content','home','sath','travel'].forEach(k=>db[k]=[]);persist();flash='All records cleared (evangelist list kept)';render()}
+function pendBar(){const n=cfg.api&&Object.keys(snap).length?diff().length:0,bad=cfg.api&&/^(Could not|Sync failed)/.test(syncMsg);if(!n&&bad)return`<div class="card" style="margin-bottom:12px;background:#fde8e8;color:#8a1c1c"><b>Not connected to the team sheet.</b> ${esc(syncMsg)} <button class="btn s" style="margin-left:6px" onclick="pullNow()">Retry now</button></div>;return n?<div class="card" style="margin-bottom:12px;background:#fff4d6;color:#7a5200"><b>${n} change${n>1?'s':''} not uploaded yet.</b> Saved on this phone — they upload as soon as the connection works.${bad?' <i>'+esc(syncMsg)+'</i>':''} <button class="btn s" style="margin-left:6px" onclick="pullNow()">Retry now</button></div>`:''}
+function recent(){const nm=id=>(contacts().find(c=>c.Contact_ID==id)||{}).Name||'';const A=[];
+[['New contact',db.fresh],['Follow-up',db.follow],['Content share',db.content],['Home Mission',db.home]].forEach(([k,a])=>fl(a).forEach((r,i)=>A.push({d:r.Date||'',k,n:r.Name||nm(r.Contact_ID)||r.Contact_ID||'',e:evOf(r),s:r.Status||'',i})));
+A.sort((x,y)=>y.d.localeCompare(x.d)||y.i-x.i);const R=A.slice(0,15);
 return`<div class="card" style="padding:0;margin-bottom:14px"><h2 style="padding:14px 14px 0">Latest team entries</h2>${R.length?<div class="tw" style="border:0"><table style="min-width:520px"><tr><th>Date</th><th>Evangelist</th><th>What</th><th>Person</th><th>Status</th></tr>${R.map(r=><tr><td>${r.d}</td><td>${esc(r.e)}</td><td>${r.k}</td><td>${esc(r.n)}</td><td>${r.s?<span class="pill ${pc(r.s)}">${esc(r.s)}</span>:''}</td></tr>).join('')}</table></div>:'<div class="empty" style="padding:14px">No entries yet</div>'}</div>`}
 function render(keep){nav();HP.textContent=HP0+(COORD?' · '+cfg.fel+' coordinator':MANAGER?' · Manager view':cfg.me?' · '+cfg.me+(cfg.scope?' · '+cfg.scope:''):(cfg.scope?' · '+cfg.scope:''));$('#ids').innerHTML=contacts().map(c=><option value="${c.Contact_ID}">${esc(c.Name)}</option>).join('');
 const y=scrollY,fm=flash;flash='';$('#app').innerHTML=pendBar()+(fm?<div class="card" style="margin-bottom:12px;background:var(--pr2);color:var(--pr)">${esc(fm)}</div>:'')+(tab=='my'?myDay():tab=='ticks'?ticks():tab=='dash'?dash():tab=='pipe'?pipe():tab=='rem'?rem():tab=='rep'?rep():tab=='evs'?evs():tab=='sync'?syncTab():list())+(MANAGER&&!KEYS.some(k=>db[k].length)?<div class="row" style="justify-content:center;margin-top:14px"><button class="btn g" onclick="seed()">Load sample data</button></div>:'');
@@ -267,7 +256,7 @@ function tbar(){if(!MANAGER)return'<div class="card" style="margin-bottom:12px;c
 return`<div class="row"><input placeholder="Coordinator WhatsApp (e.g. 919876543210)" value="${esc(cfg.wa||'')}" onchange="cfg.wa=this.value.replace(/[^0-9]/g,'');saveCfg();render()" style="flex:1;min-width:150px"><input type="email" placeholder="Coordinator email" value="${esc(cfg.em||'')}" onchange="cfg.em=this.value.trim();saveCfg();render()" style="flex:1;min-width:150px"><a class="btn g" ${b} target="_blank" href="https://wa.me/${cfg.wa||''}?text=${encodeURIComponent(all)}">WhatsApp all checked</a><button class="btn g" onclick="mailTravel()">Email all checked</button></div>`}
 function openF(k,i){resetIds();cur=k;ed=i??null;const S=SCH[k],R=ed!=null?db[k][ed]:null;$('#dt').textContent=(R?'Edit · ':'Add · ')+S.t;
 $('#df').innerHTML=S.f.map(([n,t,o])=>{const id='f_'+n,v=R?R[n]??'':(t=='ev'&&cfg.me&&['Evg','Name_Presenter','First_Coming_Evangelist'].includes(n)?cfg.me:''),l=<label>${n.replace(/_/g,' ')}</label>;
-if(t=='id')return l+<input id="${id}" value="${R?v:nextId()}" readonly>;
+if(t=='id')return l+<input id="${id}" value="${R?v:k=='home'?nextId('','HM'):nextId(SRC[0])}" readonly>;
 if(t=='sl')return l+<input id="${id}" value="${R?v:Math.max(0,...db.travel.map(r=>+r.Sl_No||0))+1}" readonly>;
 if(t=='lid')return l+<input id="${id}" value="${R?v:nextLib()}" readonly>;
 if(t=='ta')return l+<textarea id="${id}" rows="4">${esc(v)}</textarea><div class="row" style="margin:6px 0 0"><input type="file" id="lfile" onchange="upFile(this)" style="width:auto"><span id="lmsg" style="font-size:12px;color:var(--mu)">or paste text / a link above</span></div>;
@@ -275,12 +264,6 @@ if(t=='lib'){const sel=new Set(String(v).split(/[^A-Za-z0-9-]+/).filter(Boolean)
 if(t=='camp'){const show=R&&R.Reference=='Camps';return`<div id="campw" style="${show?'':'display:none'}">${l.replace('Camp Type','Camp type (shown because Reference is Camps)')}<select id="${id}"><option value=""></option>${(v&&!CAMPS.includes(v)?[v,...CAMPS]:CAMPS).map(x=><option ${x==v?'selected':''}>${esc(x)}</option>).join('')}</select></div>`}
 if(t=='sec'){const O=v&&!SECS.some(x=>x[0]==v)?[[v,'']].concat(SECS):SECS;return l+<select id="${id}">${O.map(([n,nm])=><option value="${n}" ${n==v?'selected':''}>${n}${nm?' · '+esc(nm):''}</option>).join('')}</select>}
 if(t=='ft'){const sel=new Set(String(v).split('; ').filter(Boolean));return`<label>Follow-up topics · choose one or more</label><div id="${id}" class="chips w">${FTOP.map((x,i)=><label class="chip"><input type="checkbox" value="${esc(x)}" ${sel.has(x)?'checked':''}><span><b>2.${i+1}</b> · ${esc(x)}</span></label>).join('')}</div>`}
-if(t=='cid')return l+<input id="${id}" list="ids" value="${esc(v)}" placeholder="e.g. ZS-0001" onchange="fill(this.value)">;
-if(t=='mc'){const sel=new Set(String(v).split(/[,;]\s*/).filter(Boolean));return`<label>Topics · choose one or more sections</label><div id="${id}" class="chips w">${SECS.map(([n,nm])=><label class="chip"><input type="checkbox" value="${n}" ${sel.has(n)?'checked':''} onchange="libFilter()"><span><b>${n}</b> · ${esc(nm)}</span></label>).join('')}</div><div id="cov" style="font-size:12px;color:var(--mu);margin-top:6px">${R&&R.Contact_ID?cover(R.Contact_ID):''}</div>`}
-if(t=='ev'){if(!db.evs.length)return l+<input id="${id}" value="${esc(v)}" placeholder="Type name, or add evangelists in the Evangelists tab">;const L=v&&!db.evs.includes(v)?[v,...db.evs]:db.evs;return l+<select id="${id}"><option value=""></option>${L.map(x=><option ${x==v?'selected':''}>${esc(x)}</option>).join('')}</select>}
-if(t=='s'){const O=v&&!o.includes(v)?[...o,v]:o;return l+<select id="${id}" ${n=='Source'?'onchange="fsrc(1)"':n=='Reference'?'onchange="campT()"':''}>${O.map(x=><option ${x==v?'selected':''}>${x}</option>).join('')}</select>}
-return l+<input id="${id}" type="${t=='dt'?'datetime-local':t}" value="${esc(v||(t=='date'&&!R?iso(0):''))}">}).join('');dlg.showModal();libFilter();if(k=='follow')fsrc(0)}
-const cover=id=>{const S=new Set();db.content.filter(r=>r.Contact_ID==id).forEach(r=>String(r.Topics||'').split(/[,;]\s*/).filter(Boolean).forEach(n=>S.add(n)));return S.size?'Already covered: '+[...S].sort((a,b)=>parseFloat(a)-parseFloat(b)).join(', '):'No sections covered yet'};
 function fill(id){const cv=$('#cov');if(cv)cv.textContent=cover(id);const c=contacts().find(x=>x.Contact_ID==id);if(!c)return;['Name','Mobile','Language','Fellowship','Evg'].forEach(k=>{const e=$('#f_'+k);if(e&&!e.value&&c[k]){if(e.tagName=='SELECT'&&![...e.options].some(o=>o.value==c[k]))e.add(new Option(c[k],c[k]));e.value=c[k]}})}
 function save(){const r={};SCH[cur].f.forEach(([n,t])=>r[n]=(t=='mc'||t=='lib'||t=='ft')?[...$('#f_'+n).querySelectorAll('input:checked')].map(x=>x.value).join(t=='ft'?'; ':', '):$('#f_'+n).value.trim());
 if('Camp_Type' in r&&r.Reference!='Camps')r.Camp_Type='';
@@ -304,7 +287,7 @@ function csv(k,tp){let cols=k=='rem'?['Contact_ID','Name','Mobile','Fellowship',
 let rows=k=='rem'?contacts().filter(c=>c.Level!='On track'&&c.Level!='—'):db[k];if(k=='rep'){const R=repData();cols=['Metric',...R.B.map(b=>b.l)];rows=R.rows.map(r=>Object.fromEntries(cols.map((c,i)=>[c,r[i]])))}
 if(tp)rows=[];const t=[cols.map(c=>c.replace(/_/g,' ')).join(',')].concat(rows.map(r=>cols.map(c=>'"'+String(r[c]??'').replace(/"/g,'""')+'"').join(','))).join('\n');
 const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='zion_'+k+(tp?'_template':'')+'.csv';a.click()}
-function campT(){const w=$('#campw'),r=$('#f_Reference');if(w&&r)w.style.display=r.value=='Camps'?'':'none'}
+function campT(){const w=$('#campw'),r=$('#f_Reference');if(w&&r)w.style.display=r.value=='Camps'?'':'none';const i=$('#f_Contact_ID');if(i&&r&&cur=='fresh'&&ed==null)i.value=nextId(r.value)}
 function resetIds(){$('#ids').innerHTML=contacts().map(c=><option value="${c.Contact_ID}">${esc(c.Name)}</option>).join('')}
 function fsrc(chg,keep){const s=$('#f_Source'),c=$('#f_Contact_ID');if(!s||!c)return;const v=s.value,fr=v=='Fresh Contacts',hm=v=='Home Mission';
 let L;if(fr)L=db.fresh;else if(hm)L=db.home;else{const ids=new Set(db.follow.filter(r=>r.Source==v).map(r=>r.Contact_ID));L=contacts().filter(x=>ids.has(x.Contact_ID))}
