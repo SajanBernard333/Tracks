@@ -2,6 +2,10 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Zion Sathvartha</title>
+<script>/* start-up guard: shows a message instead of a blank page */
+(function(){var shown=0;function show(m){if(shown)return;shown=1;var d=document.createElement('div');d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#8a1c1c;color:#fff;padding:14px 16px;font:14px/1.45 system-ui,sans-serif';d.innerHTML='<b>The app could not start.</b> '+m+'<br>This usually means the uploaded <b>index.html</b> is incomplete or not the latest. Upload the file again (it should be about 80&nbsp;KB or more) and wait for the deploy to finish, then reopen this page.';(document.body||document.documentElement).appendChild(d)}
+window.addEventListener('error',function(e){show('Error: '+(e&&e.message||'unknown')+(e&&e.lineno?' (line '+e.lineno+')':''))});
+setTimeout(function(){if(!window.__zsOK)show('It did not finish loading.')},3000)})();</script>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6fb;--card:#fff;--tx:#1b2333;--mu:#6b7690;--bd:#e3e8f1;--pr:#3b4bd8;--pr2:#eef0ff;--ok:#12a36b;--wa:#e99a00;--er:#d83b4b}
 :root:not([data-theme="light"]){}
@@ -38,6 +42,7 @@ label{display:block;font-size:12px;color:var(--mu);margin:9px 0 3px}dialog input
 .trend{display:flex;gap:4px;align-items:flex-end;height:120px}.trend>div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:10px;color:var(--mu)}.trend i{display:block;width:100%;background:var(--pr);border-radius:4px 4px 0 0;min-height:2px}
 h2{font-size:15px;margin:0 0 8px}
 </style></head><body>
+<header><h1>✝ Zion Sathvartha</h1><p>Outreach Ministry System · Fresh Contact → Follow Up → Content Share → Sathvartha</p></header>
 <nav id="nav"></nav><main id="app"></main>
 <dialog id="dlg"><form method="dialog" onsubmit="return false"><h2 id="dt"></h2><div id="df"></div>
 <div class="row" style="margin:16px 0 0;justify-content:flex-end"><button class="btn g" onclick="dlg.close();resetIds()">Cancel</button><button class="btn" onclick="save()">Save</button></div></form></dialog>
@@ -58,6 +63,13 @@ const TYPE=['Call','Visit','Call + Visit'];
 const STG=['Ready For Sathvartha','Attended Sathvartha','In Fellowship'];
 const FELS=['','Whitefield','Marathahalli','HAL'],REFF=[...FELS,'Other'];
 const SCH={
+fresh:{t:'Fresh Contacts',f:[['Contact_ID','id'],['Type','s',TYPE],['Date','date'],['Name','text'],['Mobile','tel'],['Language','s',['',...LANG]],['Reference','s',SRC],['Camp_Type','camp'],['Referred_By','text'],['Referrer_Mobile','tel'],['Referrer_Fellowship','s',REFF],['Fellowship','s',FELS],['Evg','ev'],['Status','s',ST1]]},
+follow:{t:'Follow Ups',f:[['Source','s',FSRC],['Contact_ID','cid'],['Type','s',TYPE],['Date','date'],['Name','text'],['Mobile','tel'],['Language','s',['',...LANG]],['Referred_By','text'],['Referrer_Fellowship','s',REFF],['Fellowship','s',FELS],['Evg','ev'],['Status','s',ST2],['Follow_Up_Topics','ft']]},
+content:{t:'Content Share',f:[['Contact_ID','cid'],['Type','s',TYPE],['Date','date'],['Mobile','tel'],['Language','s',['',...LANG]],['Reference','s',SRC],['Referred_By','text'],['Referrer_Fellowship','s',REFF],['Fellowship','s',FELS],['Evg','ev'],['Status','s',ST2],['Topics','mc'],['Library_Items','lib']]},
+lib:{t:'Content Library',f:[['Content_ID','lid'],['Section','sec'],['Title','text'],['Kind','s',['Text','Link','File']],['Content','ta'],['Language','s',['',...LANG]],['Updated','date']]},
+home:{t:'Home Missions',f:[['Date','date'],['Language','s',LANG],['Name','text'],['Mobile','tel'],['Referred_By','text'],['Referrer_Fellowship','s',REFF],['Name_Presenter','ev'],['Fellowship_Area','s',FELS],['Contact_ID','id']]},
+sath:{t:'Sathvartha Journey',f:[['Contact_ID','cid'],['Stage','s',STG],['Date','date'],['Name','text'],['Mobile','tel'],['Fellowship','s',FELS],['Evg','ev']]},
+travel:{t:'Travel Details',f:[['Sl_No','sl'],['Fellowship_Area_Name','s',FELS],['Name','text'],['Age','number'],['Gender','s',['','Male','Female','Other']],['Address','text'],['Phone_No','tel'],['Reference_Name','text'],['First_Coming_Evangelist','ev'],['Second_Coming_Evangelist','ev'],['Denomination','text'],['Religion','text'],['Onward_Train_Details','text'],['Arrival_Date_Time','dt'],['Return_Train_Details','text'],['Departure_Date_Time','dt'],['Language','s',['',...LANG]],['Contact_ID','cid']]}
 };
 let MANAGER=false,COORD=false;const LF=()=>cfg.scope||(COORD?cfg.fel:''); // chosen at runtime: team by default, manager after PIN login (Sync tab)
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -97,6 +109,14 @@ function fels(){return LF()?[LF()]:FELS.slice(1)}
 function filt(){return`${LF()?`<b style="align-self:center">${esc(LF())}</b>`:`<select onchange="fel=this.value;render()"><option value="">All fellowships</option>${fels().map(f=>`<option ${f==fel?'selected':''}>${esc(f)}</option>`).join('')}</select>`}<select onchange="evf=this.value;render()"><option value="">All evangelists</option>${db.evs.map(f=>`<option ${f==evf?'selected':''}>${esc(f)}</option>`).join('')}</select>`}
 const stg=n=>fl(db.sath).filter(r=>r.Stage==n);
 function done3(){const m={};fl(db.sath).forEach(r=>{if(!r.Date)return;const k=r.Stage=='In Fellowship'?'f':r.Stage=='Attended Sathvartha'?'a':'';if(!k)return;const c=m[r.Contact_ID]||(m[r.Contact_ID]={});if(!c[k]||r.Date<c[k])c[k]=r.Date});return Object.values(m).map(c=>add3(c.f||c.a)).filter(e=>e<=iso(0))}
+function dash(){
+const P=[['day','Today'],['week','7 days'],['month','This month'],['pick','Specific month'],['range','Custom dates'],['all','All time']];
+const K=[['New Appointments Met',fl(db.fresh).filter(r=>inPer(r.Date)&&met(r)).length],
+['Follow-up Appointments Met',fl(db.follow).filter(r=>inPer(r.Date)&&met(r)).length],
+['Home Missions Conducted',new Set(fl(db.home).filter(r=>inPer(r.Date)).map(r=>[r.Date,r.Name_Presenter,r.Fellowship_Area].join('|'))).size],
+['Ready For Sathvartha',stg('Ready For Sathvartha').filter(r=>inPer(r.Date)).length],
+['Attended Sathvartha',stg('Attended Sathvartha').filter(r=>inPer(r.Date)).length],
+['In Fellowship',stg('In Fellowship').filter(r=>inPer(r.Date)).length],
 ['Completed 3 Months in Fellowship',done3().filter(inPer).length]];
 const rk={'Ready For Sathvartha':0,'Attended Sathvartha':1,'In Fellowship':2},top={};fl(db.sath).forEach(r=>{top[r.Contact_ID]=Math.max(top[r.Contact_ID]??-1,rk[r.Stage]??-1)});const jr=[0,0,0];Object.values(top).forEach(v=>v>=0&&jr[v]++);const jm=Math.max(1,...jr);
 const cs=contacts().filter(c=>(!fel||c.Fellowship==fel)&&(!evf||c.Evg==evf)),lv={};cs.forEach(c=>lv[c.Level]=(lv[c.Level]||0)+1);
@@ -118,6 +138,9 @@ function rem(){const cs=contacts().filter(c=>(!fel||c.Fellowship==fel)&&(!evf||c
 const rows=cs.map(c=>c);
 const t=`<div class="row">${filt()}<button class="btn g" onclick="csv('rem')">Export CSV</button></div>${nudges(rows)}`+(rows.length?`<div class="tw"><table><tr>${['Contact ID','Name','Mobile','Fellowship','Evg','Last Activity','Days Since','Level'].map(h=>`<th>${h}</th>`).join('')}<th></th></tr>${rows.map(c=>`<tr><td>${c.Contact_ID}</td><td>${esc(c.Name)}</td><td>${esc(c.Mobile)}</td><td>${esc(c.Fellowship)}</td><td>${esc(c.Evg)}</td><td>${c.Last_Activity}</td><td>${c.Days_Since}</td><td><span class="pill ${c.Level}">${c.Level}</span></td><td>${c.Mobile?`<a class="btn g s" style="text-decoration:none" target="_blank" href="https://wa.me/${c.Mobile.replace(/\D/g,'')}?text=${encodeURIComponent('Hello '+c.Name+', we would love to connect with you again.')}">WhatsApp</a>`:''} ${evN(c)}</td></tr>`).join('')}</table></div>`:'<div class="card empty">🎉 Everyone is up to date.</div>');return t}
 let gran='month';
+const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let pm=iso(0).slice(0,7),rf=iso(0).slice(0,8)+'01',rt=iso(0);
+const mLabel=ym=>{const[y,m]=ym.split('-');return MN[+m-1]+' '+y},dmy=d=>d?d.split('-').reverse().join('-'):'';
 function monthList(){const t=new Date(iso(0)+'T00:00:00Z'),o=[];for(let i=0;i<36;i++)o.push(new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()-i,1)).toISOString().slice(0,7));if(!o.includes(pm))o.push(pm);return o.sort().reverse()}
 function perCtl(mode){if(mode=='pick')return`<select onchange="pm=this.value;render()">${monthList().map(m=>`<option value="${m}" ${m==pm?'selected':''}>${mLabel(m)}</option>`).join('')}</select>`;
 if(mode=='range')return`<label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mu)">From <input type="date" value="${rf}" onchange="if(this.value){rf=this.value;if(rt<rf)rt=rf}render()"></label><label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mu)">To <input type="date" value="${rt}" onchange="if(this.value){rt=this.value;if(rf>rt)rf=rt}render()"></label>`;return''}
@@ -139,6 +162,13 @@ const M=[['Total Fresh Contacts',b=>fl(db.fresh).filter(r=>I(r.Date,b)).length],
 ['Attended Sathvartha',b=>stg('Attended Sathvartha').filter(r=>I(r.Date,b)).length],
 ['In Fellowship',b=>stg('In Fellowship').filter(r=>I(r.Date,b)).length],
 ['Completed 3 Months in Fellowship',b=>done3().filter(e=>I(e,b)).length]];
+return{B,rows:M.map(([n,f])=>[n,...B.map(f)])}}
+function rep(){return rep0()+regBlock()+evBlock()+refBlock()}
+function rep0(){const {B,rows}=repData();
+return`<div class="row"><select onchange="gran=this.value;render()">${[['week','Weekly'],['month','Monthly'],['quarter','Quarterly'],['pick','Specific month'],['range','Custom dates']].map(([v,l])=>`<option value="${v}" ${v==gran?'selected':''}>${l}</option>`).join('')}</select>${perCtl(gran)}${filt()}<button class="btn g" onclick="csv('rep')">Export CSV</button></div>
+<div class="tw"><table><tr><th>Metric</th>${B.map(b=>`<th ${b.cur?'style="color:var(--pr)"':''}>${b.l}${b.cur?' ●':''}</th>`).join('')}<th>Total</th></tr>${rows.map(r=>`<tr><td><b>${r[0]}</b></td>${r.slice(1).map((v,i)=>`<td ${B[i].cur?'style="background:var(--pr2)"':''}>${v}</td>`).join('')}<td><b>${r.slice(1).reduce((a,b)=>a+b,0)}</b></td></tr>`).join('')}</table></div>
+<div style="color:var(--mu);font-size:12px;margin-top:8px">${gran=='pick'||gran=='range'?'Showing the selected period only':'● current period · last 6 periods'} · stages come from the Sathvartha Journey tab · Completed 3 Months counts 3 months after joining Fellowship (attendance date if Fellowship not yet logged)</div>`}
+function parseCSV(t){const R=[];let r=[],c='',q=0;for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h=='"'){if(t[i+1]=='"'){c+='"';i++}else q=0}else c+=h}else if(h=='"')q=1;else if(h==','){r.push(c);c=''}else if(h=='\n'||h=='\r'){if(h=='\r'&&t[i+1]=='\n')i++;r.push(c);c='';R.push(r);r=[]}else c+=h}if(c||r.length){r.push(c);R.push(r)}return R.filter(x=>x.some(y=>y.trim()))}
 const wa=m=>{let n=String(m||'').replace(/\D/g,'');if(n.length==10)n='91'+n;return n};
 function liveLine(){return`<div class="row" style="justify-content:space-between"><span style="font-size:12px;color:var(--mu)">${cfg.api?`<b style="color:var(--ok)">● Live</b> · ${esc(syncMsg)||'connecting…'} · auto-refresh every 30 s`:'Local data only — connect Google Sheets in the Sync tab for team-wide live data'}</span>${cfg.api?'<button class="btn g s" onclick="pullNow()">Refresh now</button>':''}</div>`}
 function evTable(){
@@ -181,6 +211,16 @@ const cl=r=>{const ids=String(r.Library_Items||'').split(/[^A-Za-z0-9-]+/).filte
 async function mailTravel(ids){const to=(cfg.em||'').trim();if(!to){alert('Enter the coordinator email first');return}
 const L=db.travel.filter(t=>t.Checked=='Yes'&&(!ids||ids.includes(String(t._id))));if(!L.length){alert('No checked records to send');return}
 if(!cfg.api){location.href='mailto:'+to+'?subject='+encodeURIComponent('Sathvartha travel details')+'&body='+encodeURIComponent(L.map(tmsg).join('\n\n---\n\n'));return}
+if(!MPIN){const p=prompt('Manager PIN (needed to send email)');if(!p)return;MPIN=p}
+const body=L.map(t=>tmsg(t).replace(/\*/g,'')).join('\n\n----------\n\n');
+try{await api({pin:MPIN,mail:{to,subject:'Sathvartha travel details'+(L.length==1?' – '+L[0].Name:' ('+L.length+')'),body}});flash='Email sent to '+to+' ('+L.length+' record'+(L.length>1?'s':'')+')';render()}
+catch(e){if(/PIN/.test(e.message))MPIN='';alert('Email not sent: '+e.message+(/PIN/.test(e.message)?'':'\n\nIf this says "Authorization" or "permission", re-deploy the Apps Script (see steps) and approve Gmail access.'))}}
+const tl=r=>{
+if(r.Checked!='Yes')return MANAGER?`<button class="btn s" onclick="chk('${r._id}')">✓ Check</button> `:'<span style="color:var(--mu);font-size:12px">awaiting manager check</span> ';
+const m=encodeURIComponent(tmsg(r));
+return`<a class="btn g s" style="text-decoration:none" target="_blank" href="https://wa.me/${cfg.wa||''}?text=${m}">WhatsApp</a> <button class="btn g s" onclick="mailTravel(['${r._id}'])">Email</button> ${MANAGER?`<button class="btn g s" onclick="chk('${r._id}',1)">Uncheck</button> `:''}`};
+function chk(id,un){const t=db.travel.find(x=>x._id==id);if(!t)return;
+if(un){t.Checked='';t.Checked_By='';t.Checked_On=''}
 else{const miss=['Age','Gender','Address','Phone_No','Onward_Train_Details','Arrival_Date_Time','Return_Train_Details','Departure_Date_Time'].filter(k=>!t[k]);if(miss.length&&!confirm('Still empty: '+miss.map(x=>x.replace(/_/g,' ')).join(', ')+'.\nMark as checked anyway?'))return;t.Checked='Yes';t.Checked_By='Manager';t.Checked_On=iso(0)}
 persist();render()}
 
@@ -216,6 +256,12 @@ const st=s=>A(db.sath).filter(r=>r.Stage==s&&inR(r.Date)).length,m={};
 A(db.sath).forEach(r=>{if(!r.Date)return;const k=r.Stage=='In Fellowship'?'f':r.Stage=='Attended Sathvartha'?'a':'';if(!k)return;const c=m[r.Contact_ID]||(m[r.Contact_ID]={});if(!c[k]||r.Date<c[k])c[k]=r.Date});
 const c3=Object.values(m).map(c=>add3(c.f||c.a)).filter(e=>e<=iso(0)&&inR(e)).length;
 const cs=contacts().filter(c=>(!reg||c.Fellowship==reg)&&(!EF||c.Evg==EF)),L=l=>cs.filter(c=>c.Level==l).length;
+return{sh:A(db.content).filter(r=>inR(r.Date)).length,fc:A(db.fresh).filter(r=>inR(r.Date)&&met(r)).length,fu:A(db.follow).filter(r=>inR(r.Date)&&met(r)).length,hm,rd:st('Ready For Sathvartha'),at:st('Attended Sathvartha'),fe:st('In Fellowship'),c3,d:L('Due'),o:L('Overdue'),p:L('Pending')}}
+function regTable(title,inR){
+const rows=REGS.map(r=>[r,regM(r,inR)]).concat([['All fellowships',regM('',inR)]]),pl=(v,k)=>v?`<span class="pill ${k}">${v}</span>`:'<span style="color:var(--mu)">0</span>';
+return`<div class="card" style="padding:0;margin-bottom:14px"><h2 style="padding:14px 14px 0">${title}</h2><div class="tw" style="border:0"><table style="min-width:680px"><tr><th>Fellowship</th><th>New</th><th>Follow-ups</th><th>Home Missions</th><th>Ready</th><th>Attended</th><th>In Fellowship</th><th>3 months</th><th>Due</th><th>Overdue</th><th>Pending</th></tr>${rows.map(([n,m],i)=>`<tr ${i==3?'style="font-weight:700;background:var(--pr2)"':''}><td>${n}</td><td>${m.fc}</td><td>${m.fu}</td><td>${m.hm}</td><td>${m.rd}</td><td>${m.at}</td><td>${m.fe}</td><td>${m.c3}</td><td>${pl(m.d,'Due')}</td><td>${pl(m.o,'Overdue')}</td><td>${pl(m.p,'Pending')}</td></tr>`).join('')}</table></div></div>`}
+function regBlock(){const B=buckets(),b=B[B.length-1];return regTable('By fellowship · '+b.l+curTxt()+' · all three fellowships together in the last row',d=>!!d&&d>=b.s&&d<=b.e)}
+
 function evRows(reg,inR){const names=[...new Set(db.evs.concat(...[db.fresh,db.follow,db.content,db.home,db.sath].map(a=>a.map(evOf))).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
 return names.map(n=>[n,regM(reg,inR,n)]).filter(([n,m])=>m.fc+m.fu+m.sh+m.hm+m.rd+m.at+m.fe+m.c3+m.d+m.o+m.p>0)}
 function evSection(reg,inR,title){const R=evRows(reg,inR),T=regM(reg,inR,''),pl=(v,k)=>v?`<span class="pill ${k}">${v}</span>`:'<span style="color:var(--mu)">0</span>',row=(n,m,b)=>`<tr ${b?'style="font-weight:700;background:var(--pr2)"':''}><td>${esc(n)}</td><td>${m.fc}</td><td>${m.fu}</td><td>${m.sh}</td><td>${m.hm}</td><td>${m.rd}</td><td>${m.at}</td><td>${m.fe}</td><td>${m.c3}</td><td>${pl(m.d,'Due')}</td><td>${pl(m.o,'Overdue')}</td><td>${pl(m.p,'Pending')}</td></tr>`;
@@ -288,6 +334,14 @@ let clrArm=0;
 function clr(){if(!clrArm){clrArm=1;$('#clr').textContent='Tap again to erase all records';setTimeout(()=>{clrArm=0;const b=$('#clr');if(b)b.textContent='Clear all data'},4000);return}clrArm=0;['fresh','follow','content','home','sath','travel'].forEach(k=>db[k]=[]);persist();flash='All records cleared (evangelist list kept)';render()}
 function pendBar(){const n=cfg.api&&Object.keys(snap).length?diff().length:0,bad=cfg.api&&/^(Could not|Sync failed)/.test(syncMsg);if(!n&&bad)return`<div class="card" style="margin-bottom:12px;background:#fde8e8;color:#8a1c1c"><b>Not connected to the team sheet.</b> ${esc(syncMsg)} <button class="btn s" style="margin-left:6px" onclick="pullNow()">Retry now</button></div>`;return n?`<div class="card" style="margin-bottom:12px;background:#fff4d6;color:#7a5200"><b>${n} change${n>1?'s':''} not uploaded yet.</b> Saved on this phone — they upload as soon as the connection works.${bad?' <i>'+esc(syncMsg)+'</i>':''} <button class="btn s" style="margin-left:6px" onclick="pullNow()">Retry now</button></div>`:''}
 function refData(){const B=buckets(),b=B[B.length-1],inR=d=>!!d&&d>=b.s&&d<=b.e,first={},fu={};
+[db.fresh,db.home,db.follow,db.content].forEach(a=>fl(a).forEach(r=>{if(r.Contact_ID&&r.Date&&(!first[r.Contact_ID]||r.Date<first[r.Contact_ID]))first[r.Contact_ID]=r.Date}));db.follow.forEach(r=>{if(r.Contact_ID)fu[r.Contact_ID]=1});
+const cs=contacts().filter(c=>(!fel||c.Fellowship==fel)&&(!evf||c.Evg==evf)&&c.Referred_By),m={},bf={};
+cs.forEach(c=>{const k=c.Referred_By.trim().toLowerCase(),o=m[k]||(m[k]={n:c.Referred_By.trim(),f:'',mb:'',t:0,np:0,fu:0,rd:0,at:0,fe:0,rc:0,names:[]}),ml=mile(c.Contact_ID);if(!o.f&&c.Referrer_Fellowship)o.f=c.Referrer_Fellowship;if(!o.mb&&c.Referrer_Mobile)o.mb=c.Referrer_Mobile;o.t++;if(inR(first[c.Contact_ID]))o.np++;if(fu[c.Contact_ID])o.fu++;if(ml.rdy)o.rd++;if(ml.att)o.at++;if(ml.fel)o.fe++;if(ml.att||ml.fel)o.rc++;o.names.push(c.Name||c.Contact_ID)});
+const rows=Object.values(m).sort((a,b)=>b.t-a.t||a.n.localeCompare(b.n));rows.forEach(o=>{const f=o.f||'Not given';bf[f]=(bf[f]||0)+o.t});return{rows,bf,b}}
+function refPills(bf){return Object.keys(bf).length?Object.entries(bf).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="pill Neutral" style="margin:2px 4px 2px 0">${esc(k)} · ${v}</span>`).join(''):''}
+function refCard(){const {rows,bf}=refData(),R=rows.slice(0,12);
+return`<div class="card" style="padding:0;margin-bottom:14px"><h2 style="padding:14px 14px 0">Referred by</h2>${R.length?`<div style="padding:6px 14px 0;font-size:12px;color:var(--mu)">Referrer's fellowship: ${refPills(bf)}</div><div class="tw" style="border:0"><table style="min-width:600px"><tr><th>Referrer</th><th>Fellowship</th><th>Mobile</th><th>Referred</th><th>Reached Sathvartha or later</th><th>People</th></tr>${R.map(o=>`<tr><td><b>${esc(o.n)}</b></td><td>${esc(o.f)}</td><td>${esc(o.mb)}</td><td>${o.t}</td><td>${o.rc}</td><td>${esc(o.names.join(', '))}</td></tr>`).join('')}</table></div>`:'<div class="empty" style="padding:14px">No referrals recorded yet</div>'}</div>`}
+function refBlock(){const {rows,bf,b}=refData();
 return`<div class="row" style="justify-content:space-between;margin-top:18px"><h2 style="margin:0">Referrals · by referrer</h2><button class="btn g s" onclick="csvRef()">Export CSV</button></div>
 <div style="color:var(--mu);font-size:12px;margin:4px 0 10px">${fel?esc(fel)+' fellowship':'All fellowships'} · "New" = first contact in ${b.l} · referrer's fellowship: ${refPills(bf)||'none yet'}</div>
 ${rows.length?`<div class="tw"><table style="min-width:760px"><tr><th>Referrer</th><th>Referrer fellowship</th><th>Mobile</th><th>New</th><th>Total referred</th><th>Followed up</th><th>Ready</th><th>Attended</th><th>In Fellowship</th><th>People</th></tr>${rows.map(o=>`<tr><td><b>${esc(o.n)}</b></td><td>${esc(o.f)}</td><td>${esc(o.mb)}</td><td>${o.np}</td><td>${o.t}</td><td>${o.fu}</td><td>${o.rd}</td><td>${o.at}</td><td>${o.fe}</td><td>${esc(o.names.join(', '))}</td></tr>`).join('')}</table></div>`:'<div class="card empty">No referrals recorded yet.</div>'}`}
@@ -309,6 +363,13 @@ function tbar(){if(!MANAGER)return'<div class="card" style="margin-bottom:12px;c
 return`<div class="row"><input placeholder="Coordinator WhatsApp (e.g. 919876543210)" value="${esc(cfg.wa||'')}" onchange="cfg.wa=this.value.replace(/[^0-9]/g,'');saveCfg();render()" style="flex:1;min-width:150px"><input type="email" placeholder="Coordinator email" value="${esc(cfg.em||'')}" onchange="cfg.em=this.value.trim();saveCfg();render()" style="flex:1;min-width:150px"><a class="btn g" ${b} target="_blank" href="https://wa.me/${cfg.wa||''}?text=${encodeURIComponent(all)}">WhatsApp all checked</a><button class="btn g" onclick="mailTravel()">Email all checked</button></div>`}
 function openF(k,i){resetIds();cur=k;ed=i??null;const S=SCH[k],R=ed!=null?db[k][ed]:null;$('#dt').textContent=(R?'Edit · ':'Add · ')+S.t;
 $('#df').innerHTML=S.f.map(([n,t,o])=>{const id='f_'+n,v=R?R[n]??'':(t=='ev'&&cfg.me&&['Evg','Name_Presenter','First_Coming_Evangelist'].includes(n)?cfg.me:''),l=`<label>${n.replace(/_/g,' ')}</label>`;
+if(t=='id')return l+`<input id="${id}" value="${R?v:k=='home'?nextId('','HM'):nextId(SRC[0])}" readonly>`;
+if(t=='sl')return l+`<input id="${id}" value="${R?v:Math.max(0,...db.travel.map(r=>+r.Sl_No||0))+1}" readonly>`;
+if(t=='lid')return l+`<input id="${id}" value="${R?v:nextLib()}" readonly>`;
+if(t=='ta')return l+`<textarea id="${id}" rows="4">${esc(v)}</textarea><div class="row" style="margin:6px 0 0"><input type="file" id="lfile" onchange="upFile(this)" style="width:auto"><span id="lmsg" style="font-size:12px;color:var(--mu)">or paste text / a link above</span></div>`;
+if(t=='lib'){const sel=new Set(String(v).split(/[^A-Za-z0-9-]+/).filter(Boolean));return`<label>Library content to share (pick one or more)</label><div id="${id}" style="max-height:180px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:6px">${db.lib.length?db.lib.slice().sort((a,b)=>parseFloat(a.Section)-parseFloat(b.Section)).map(x=>`<label style="display:flex;gap:8px;align-items:center;margin:3px 0;color:var(--tx)" data-sec="${esc(x.Section)}"><input type="checkbox" value="${esc(x.Content_ID)}" ${sel.has(x.Content_ID)?'checked':''} style="width:auto"><span>§${esc(x.Section)} · ${esc(x.Title)}</span></label>`).join(''):'<span style="color:var(--mu);font-size:12px">No library content yet — add it in the Content Library tab.</span>'}</div>`}
+if(t=='camp'){const show=R&&R.Reference=='Camps';return`<div id="campw" style="${show?'':'display:none'}">${l.replace('Camp Type','Camp type (shown because Reference is Camps)')}<select id="${id}"><option value=""></option>${(v&&!CAMPS.includes(v)?[v,...CAMPS]:CAMPS).map(x=>`<option ${x==v?'selected':''}>${esc(x)}</option>`).join('')}</select></div>`}
+if(t=='sec'){const O=v&&!SECS.some(x=>x[0]==v)?[[v,'']].concat(SECS):SECS;return l+`<select id="${id}">${O.map(([n,nm])=>`<option value="${n}" ${n==v?'selected':''}>${n}${nm?' · '+esc(nm):''}</option>`).join('')}</select>`}
 if(t=='ft'){const sel=new Set(String(v).split('; ').filter(Boolean));return`<label>Follow-up topics · choose one or more</label><div id="${id}" class="chips w">${FTOP.map((x,i)=>`<label class="chip"><input type="checkbox" value="${esc(x)}" ${sel.has(x)?'checked':''}><span><b>2.${i+1}</b> · ${esc(x)}</span></label>`).join('')}</div>`}
 if(t=='cid')return l+`<input id="${id}" list="ids" value="${esc(v)}" placeholder="e.g. ZS-0001" onchange="fill(this.value)">`;
 if(t=='mc'){const sel=new Set(String(v).split(/[,;]\s*/).filter(Boolean));return`<label>Topics · choose one or more sections</label><div id="${id}" class="chips w">${SECS.map(([n,nm])=>`<label class="chip"><input type="checkbox" value="${n}" ${sel.has(n)?'checked':''} onchange="libFilter()"><span><b>${n}</b> · ${esc(nm)}</span></label>`).join('')}</div><div id="cov" style="font-size:12px;color:var(--mu);margin-top:6px">${R&&R.Contact_ID?cover(R.Contact_ID):''}</div>`}
@@ -329,6 +390,16 @@ let made=-1;
 if(ed!=null){const o=db[cur][ed];r._id=o._id;if(cur=='travel'&&o.Checked=='Yes'&&!SCH.travel.f.some(([n])=>(o[n]||'')!==(r[n]||''))){r.Checked=o.Checked;r.Checked_By=o.Checked_By;r.Checked_On=o.Checked_On}db[cur][ed]=r}else db[cur].push(r);
 if(cur=='sath'&&r.Stage=='Ready For Sathvartha'&&!db.travel.some(t=>t.Contact_ID==r.Contact_ID)){db.travel.push(mkTravel(r));made=db.travel.length-1}
 if(r.Status&&r.Contact_ID&&cur!='travel'){const id=r.Contact_ID,s=r.Status,c=contacts().find(x=>x.Contact_ID==id)||{},d=r.Date||iso(0);
+const addSt=g=>{if(!db.sath.some(x=>x.Contact_ID==id&&x.Stage==g))db.sath.push({Contact_ID:id,Stage:g,Date:d,Name:r.Name||c.Name||'',Mobile:r.Mobile||c.Mobile||'',Fellowship:fOf(r)||c.Fellowship||'',Evg:r.Evg||c.Evg||''})};
+if(s=='Ready To Attend'||s=='Confirmed to attend'){addSt('Ready For Sathvartha');if(!db.travel.some(t=>t.Contact_ID==id)){db.travel.push(mkTravel({Contact_ID:id,Name:r.Name||c.Name,Mobile:r.Mobile||c.Mobile,Fellowship:fOf(r)||c.Fellowship,Evg:r.Evg||c.Evg}));made=db.travel.length-1;flash='Travel Details created from the contact — complete them; the manager then checks ✓ and sends.'}}
+if(s=='Attended Sathvartha')addSt('Attended Sathvartha');if(s=='Entered Fellowship')addSt('In Fellowship');
+if(s=='Pending')flash='Marked Pending — it now shows under Reminders, where you can WhatsApp the evangelist and the referrer.'}
+persist();dlg.close();if(made>=0){tab='travel';render();openF('travel',made)}else render()}
+function del_(k,i){if(confirm('Delete this record?')){db[k].splice(i,1);persist();render()}}
+function csv(k,tp){let cols=k=='rem'?['Contact_ID','Name','Mobile','Fellowship','Evg','Last_Activity','Days_Since','Level']:k=='rep'?[]:SCH[k].f.map(f=>f[0]);
+let rows=k=='rem'?contacts().filter(c=>c.Level!='On track'&&c.Level!='—'):db[k];if(k=='rep'){const R=repData();cols=['Metric',...R.B.map(b=>b.l)];rows=R.rows.map(r=>Object.fromEntries(cols.map((c,i)=>[c,r[i]])))}
+if(tp)rows=[];const t=[cols.map(c=>c.replace(/_/g,' ')).join(',')].concat(rows.map(r=>cols.map(c=>'"'+String(r[c]??'').replace(/"/g,'""')+'"').join(','))).join('\n');
+const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='zion_'+k+(tp?'_template':'')+'.csv';a.click()}
 function campT(){const w=$('#campw'),r=$('#f_Reference');if(w&&r)w.style.display=r.value=='Camps'?'':'none';const i=$('#f_Contact_ID');if(i&&r&&cur=='fresh'&&ed==null)i.value=nextId(r.value)}
 function resetIds(){$('#ids').innerHTML=contacts().map(c=>`<option value="${c.Contact_ID}">${esc(c.Name)}</option>`).join('')}
 function fsrc(chg,keep){const s=$('#f_Source'),c=$('#f_Contact_ID');if(!s||!c)return;const v=s.value,fr=v=='Fresh Contacts',hm=v=='Home Mission';
@@ -359,6 +430,6 @@ db.sath=[{Contact_ID:'ZS-0004',Stage:'Ready For Sathvartha',Date:iso(-120),Name:
 render();
 if(cfg.api){flush().then(pull)}
 setInterval(()=>{if(cfg.api&&!dlg.open&&!busy)flush().then(pull)},30000);
+window.__zsOK=1;
 addEventListener('visibilitychange',()=>{if(!document.hidden&&cfg.api&&!dlg.open&&!busy)flush().then(pull)});
 </script></body></html>
-
