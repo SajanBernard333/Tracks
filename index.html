@@ -1,3 +1,6 @@
+
+index.html
+100%
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -61,18 +64,19 @@ const SECS=[['1','WOGT'],['2',"GOD'S PLAN"],['3','SALVATION'],['4','YC IN 1ST CO
 const LANG=['English','Malayalam','Kannada','Tamil','Telugu','Hindi','Konkani','Oriya'];
 const TYPE=['Call','Visit','Call + Visit'];
 const STG=['Ready For Sathvartha','Attended Sathvartha','In Fellowship'];
-const FELS=['','Whitefield','Marathahalli','HAL'],REFF=[...FELS,'Other'];
+const FELS=['','Whitefield','Marathahalli','HAL'],REFF=[...FELS,'Other'],INV=['Invited','Attended','Not attended'];
 const SCH={
 fresh:{t:'Fresh Contacts',f:[['Contact_ID','id'],['Type','s',TYPE],['Date','date'],['Name','text'],['Mobile','tel'],['Language','s',['',...LANG]],['Reference','s',SRC],['Camp_Type','camp'],['Referred_By','text'],['Referrer_Mobile','tel'],['Referrer_Fellowship','s',REFF],['Fellowship','s',FELS],['Evg','ev'],['Status','s',ST1]]},
 follow:{t:'Follow Ups',f:[['Source','s',FSRC],['Contact_ID','cid'],['Type','s',TYPE],['Date','date'],['Name','text'],['Mobile','tel'],['Language','s',['',...LANG]],['Referred_By','text'],['Referrer_Fellowship','s',REFF],['Fellowship','s',FELS],['Evg','ev'],['Status','s',ST2],['Follow_Up_Topics','ft']]},
 content:{t:'Content Share',f:[['Contact_ID','cid'],['Type','s',TYPE],['Date','date'],['Mobile','tel'],['Language','s',['',...LANG]],['Reference','s',SRC],['Referred_By','text'],['Referrer_Fellowship','s',REFF],['Fellowship','s',FELS],['Evg','ev'],['Status','s',ST2],['Topics','mc'],['Library_Items','lib']]},
 lib:{t:'Content Library',f:[['Content_ID','lid'],['Section','sec'],['Title','text'],['Kind','s',['Text','Link','File']],['Content','ta'],['Language','s',['',...LANG]],['Updated','date']]},
-home:{t:'Home Missions',f:[['Date','date'],['Language','s',LANG],['Name','text'],['Mobile','tel'],['Referred_By','text'],['Referrer_Fellowship','s',REFF],['Name_Presenter','ev'],['Fellowship_Area','s',FELS],['Contact_ID','id']]},
+home:{t:'Home Missions',f:[['Date','date'],['Language','s',LANG],['Name','text'],['Mobile','tel'],['Referred_By','text'],['Referrer_Fellowship','s',REFF],['Name_Presenter','ev'],['Fellowship_Area','s',FELS],['Invite_Status','s',INV],['Outcome','s',['','Positive','Neutral','Negative']],['Contact_ID','id']]},
 sath:{t:'Sathvartha Journey',f:[['Contact_ID','cid'],['Stage','s',STG],['Date','date'],['Name','text'],['Mobile','tel'],['Fellowship','s',FELS],['Evg','ev']]},
 travel:{t:'Travel Details',f:[['Sl_No','sl'],['Fellowship_Area_Name','s',FELS],['Name','text'],['Age','number'],['Gender','s',['','Male','Female','Other']],['Address','text'],['Phone_No','tel'],['Reference_Name','text'],['First_Coming_Evangelist','ev'],['Second_Coming_Evangelist','ev'],['Denomination','text'],['Religion','text'],['Onward_Train_Details','text'],['Arrival_Date_Time','dt'],['Return_Train_Details','text'],['Departure_Date_Time','dt'],['Language','s',['',...LANG]],['Contact_ID','cid']]}
 };
 let MANAGER=false,COORD=false;const LF=()=>cfg.scope||(COORD?cfg.fel:''); // chosen at runtime: team by default, manager after PIN login (Sync tab)
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const homeAtt=r=>!r.Invite_Status||r.Invite_Status=='Attended',hmStatus=r=>r.Status||(r.Invite_Status=='Attended'?({Positive:'Positive For Next Session',Neutral:'Neutral',Negative:'Negative'})[r.Outcome]||'':'');
 const KEYS=Object.keys(SCH);let db={fresh:[],follow:[],content:[],lib:[],home:[],sath:[],travel:[],evs:[],evm:{}},tab=MANAGER?'dash':'my',q='',fel='',evf='',per='month',cur='',ed=null,cfg={},flash='',impTab='';
 try{const s=localStorage.getItem('zs_v1');if(s)db=Object.assign(db,JSON.parse(s))}catch(e){}
 db.sath=db.sath.map(r=>r.Attended_Date?{Contact_ID:r.Contact_ID,Stage:'Attended Sathvartha',Date:r.Attended_Date,Name:'',Mobile:'',Fellowship:r.Fellowship,Evg:r.Evg}:r);
@@ -96,7 +100,7 @@ function nextId(ref,pre){pre=pre||REFP[ref]||'ZS';let n=0;KEYS.forEach(k=>db[k].
 function level(d){return d==null?'—':d>=30?'Pending':d>=14?'Overdue':d>=7?'Due':'On track'}
 function contacts(){const m={};KEYS.forEach(k=>db[k].forEach(r=>{const id=r.Contact_ID;if(!id)return;const c=m[id]||(m[id]={Contact_ID:id,Name:'',Mobile:'',Fellowship:'',Evg:'',Last_Activity:''});
 ['Name','Mobile','Evg','Language','Referred_By','Referrer_Fellowship','Referrer_Mobile','Reference'].forEach(x=>{if(r[x]&&!c[x])c[x]=r[x]});if(fOf(r)&&!c.Fellowship)c.Fellowship=fOf(r);
-const d=r.Date||r.Attended_Date;if(d&&d>c.Last_Activity)c.Last_Activity=d;if(r.Status&&(d||'')>=(c.SD||'')){c.Status=r.Status;c.SD=d||''}}));
+const d=r.Date||r.Attended_Date;if(d&&d>c.Last_Activity)c.Last_Activity=d;const st=k=='home'?hmStatus(r):r.Status;if(st&&(d||'')>=(c.SD||'')){c.Status=st;c.SD=d||''}}));
 return Object.values(m).map(c=>{c.Days_Since=days(c.Last_Activity);c.Level=CLOSED.includes(c.Status)?'—':c.Status=='Pending'?'Pending':level(c.Days_Since);return c}).sort((a,b)=>(b.Days_Since??-1)-(a.Days_Since??-1))}
 function inPer(d){if(!d)return false;if(per=='pick')return d.slice(0,7)==pm;if(per=='range')return d>=rf&&d<=rt;const n=days(d);if(n<0)return per=='all';return per=='day'?n==0:per=='week'?n<7:per=='month'?d.slice(0,7)==iso(0).slice(0,7):true}
 function add3(d){if(!d)return'9999';const x=new Date(d);x.setMonth(x.getMonth()+3);return x.toISOString().slice(0,10)}
@@ -113,8 +117,8 @@ function dash(){
 const P=[['day','Today'],['week','7 days'],['month','This month'],['pick','Specific month'],['range','Custom dates'],['all','All time']];
 const K=[['New Appointments Met',fl(db.fresh).filter(r=>inPer(r.Date)&&met(r)).length],
 ['Follow-up Appointments Met',fl(db.follow).filter(r=>inPer(r.Date)&&met(r)).length],
-['Home Missions Conducted',new Set(fl(db.home).filter(r=>inPer(r.Date)).map(r=>[r.Date,r.Name_Presenter,r.Fellowship_Area].join('|'))).size],
-['Ready For Sathvartha',stg('Ready For Sathvartha').filter(r=>inPer(r.Date)).length],
+['Home Missions Conducted',new Set(fl(db.home).filter(r=>inPer(r.Date)&&homeAtt(r)).map(r=>[r.Date,r.Name_Presenter,r.Fellowship_Area].join('|'))).size],
+['Home Mission Invites',fl(db.home).filter(r=>inPer(r.Date)&&r.Invite_Status).length],['Invites Attended',fl(db.home).filter(r=>inPer(r.Date)&&r.Invite_Status=='Attended').length],['Ready For Sathvartha',stg('Ready For Sathvartha').filter(r=>inPer(r.Date)).length],
 ['Attended Sathvartha',stg('Attended Sathvartha').filter(r=>inPer(r.Date)).length],
 ['In Fellowship',stg('In Fellowship').filter(r=>inPer(r.Date)).length],
 ['Completed 3 Months in Fellowship',done3().filter(inPer).length]];
@@ -130,10 +134,10 @@ return liveLine()+`<div class="row"><select onchange="per=this.value;render()">$
 <div class="card"><h2>Sathvartha journey (current stage)</h2>${STG.map((k,i)=>`<div class="bar"><em>${k}</em><i style="width:${jr[i]/jm*100}%"></i>${jr[i]}</div>`).join('')}</div>
 <div class="card"><h2>Follow-up health</h2>${['Due','Overdue','Pending','On track'].map(k=>`<div class="bar"><em>${k}</em><span class="pill ${k=='On track'?'ok':k}">${lv[k]||0}</span></div>`).join('')}<div style="color:var(--mu);font-size:12px">Due 7+ · Overdue 14+ · Pending 30+ days</div></div></div>
 ${COORD?'':'<div class="row" style="justify-content:center;margin-top:16px"><button class="btn g s" id="clr" onclick="clr()">Clear all data</button></div>'}`}
-function table(cols,rows,del){return rows.length?`<div class="tw"><table><tr>${cols.map(c=>`<th>${c.replace(/_/g,' ')}</th>`).join('')}${del?'<th></th>':''}</tr>${rows.map(r=>`<tr>${cols.map(c=>{const v=r[c]??'';return`<td>${c=='Library_Items'?esc(libT(v)):c=='Content'?esc(String(v).slice(0,70)):c=='Checked'?(v=='Yes'?'<span class="pill ok">✓ Checked</span>':'<span class="pill Due">To check</span>'):c=='Status'||c=='Level'||c=='Stage'?`<span class="pill ${pc(v)}">${esc(v)}</span>`:esc(v)}</td>`}).join('')}${del?`<td>${tab=='travel'?tl(r):tab=='content'?cl(r):''}<button class="btn g s" onclick="openF('${tab}',${r._i})">Edit</button> <button class="btn g s" onclick="del_('${tab}',${r._i})">✕</button></td>`:''}</tr>`).join('')}</table></div>`:'<div class="card empty">No records yet — tap “+ Add”.</div>'}
+function table(cols,rows,del){return rows.length?`<div class="tw"><table><tr>${cols.map(c=>`<th>${c.replace(/_/g,' ')}</th>`).join('')}${del?'<th></th>':''}</tr>${rows.map(r=>`<tr>${cols.map(c=>{const v=r[c]??'';return`<td>${c=='Library_Items'?esc(libT(v)):c=='Content'?esc(String(v).slice(0,70)):c=='Checked'?(v=='Yes'?'<span class="pill ok">✓ Checked</span>':'<span class="pill Due">To check</span>'):c=='Status'||c=='Level'||c=='Stage'||c=='Invite_Status'||c=='Outcome'?`<span class="pill ${pc(v)}">${esc(v)}</span>`:esc(v)}</td>`}).join('')}${del?`<td>${tab=='travel'?tl(r):tab=='content'?cl(r):tab=='home'&&r.Invite_Status=='Invited'?`<button class="btn s" onclick="hmMark(${r._i},'Attended')">Attended</button> <button class="btn g s" onclick="hmMark(${r._i},'Not attended')">Not attended</button> `:''}<button class="btn g s" onclick="openF('${tab}',${r._i})">Edit</button> <button class="btn g s" onclick="del_('${tab}',${r._i})">✕</button></td>`:''}</tr>`).join('')}</table></div>`:'<div class="card empty">No records yet — tap “+ Add”.</div>'}
 function list(){const S=SCH[tab],cols=S.f.map(f=>f[0]).concat(tab=='travel'?['Checked']:[]);
 const rows=db[tab].map((r,i)=>({...r,_i:i})).filter(r=>(tab=='lib'||(!fel||fOf(r)==fel)&&(!evf||evOf(r)==evf))&&(!q||JSON.stringify(r).toLowerCase().includes(q))).sort((a,b)=>(b.Date||b.Attended_Date||'').localeCompare(a.Date||a.Attended_Date||''));
-return`<div class="row"><input placeholder="Search…" value="${esc(q)}" oninput="q=this.value.toLowerCase();render(1)" style="flex:1;min-width:140px">${filt()}<button class="btn g" onclick="csv('${tab}')">Export CSV</button><button class="btn g" onclick="impTab='${tab}';$('#imp').click()">Import CSV</button><button class="btn g" onclick="csv('${tab}',1)">Template</button><button class="btn" onclick="openF('${tab}')">+ Add</button></div>${tab=='travel'?tbar():''}${table(cols,rows,1)}`}
+return`<div class="row"><input placeholder="Search…" value="${esc(q)}" oninput="q=this.value.toLowerCase();render(1)" style="flex:1;min-width:140px">${filt()}<button class="btn g" onclick="csv('${tab}')">Export CSV</button><button class="btn g" onclick="impTab='${tab}';$('#imp').click()">Import CSV</button><button class="btn g" onclick="impTab='${tab}';impSheet()">Import Google Sheet</button><button class="btn g" onclick="csv('${tab}',1)">Template</button><button class="btn" onclick="openF('${tab}')">+ Add</button></div>${tab=='travel'?tbar():''}${table(cols,rows,1)}`}
 function rem(){const cs=contacts().filter(c=>(!fel||c.Fellowship==fel)&&(!evf||c.Evg==evf)&&c.Level!='On track'&&c.Level!='—');
 const rows=cs.map(c=>c);
 const t=`<div class="row">${filt()}<button class="btn g" onclick="csv('rem')">Export CSV</button></div>${nudges(rows)}`+(rows.length?`<div class="tw"><table><tr>${['Contact ID','Name','Mobile','Fellowship','Evg','Last Activity','Days Since','Level'].map(h=>`<th>${h}</th>`).join('')}<th></th></tr>${rows.map(c=>`<tr><td>${c.Contact_ID}</td><td>${esc(c.Name)}</td><td>${esc(c.Mobile)}</td><td>${esc(c.Fellowship)}</td><td>${esc(c.Evg)}</td><td>${c.Last_Activity}</td><td>${c.Days_Since}</td><td><span class="pill ${c.Level}">${c.Level}</span></td><td>${c.Mobile?`<a class="btn g s" style="text-decoration:none" target="_blank" href="https://wa.me/${c.Mobile.replace(/\D/g,'')}?text=${encodeURIComponent('Hello '+c.Name+', we would love to connect with you again.')}">WhatsApp</a>`:''} ${evN(c)}</td></tr>`).join('')}</table></div>`:'<div class="card empty">🎉 Everyone is up to date.</div>');return t}
@@ -157,7 +161,7 @@ B.push({s:D(s),e:D(e),l,cur:i==0})}return B}
 function repData(){const B=buckets(),I=(d,b)=>!!d&&d>=b.s&&d<=b.e,td=iso(0);
 const M=[['Total Fresh Contacts',b=>fl(db.fresh).filter(r=>I(r.Date,b)).length],
 ['Total Follow-up Appointments',b=>fl(db.follow).filter(r=>I(r.Date,b)).length],
-['Home Missions Conducted',b=>new Set(fl(db.home).filter(r=>I(r.Date,b)).map(r=>[r.Date,r.Name_Presenter,r.Fellowship_Area].join('|'))).size],
+['Home Missions Conducted',b=>new Set(fl(db.home).filter(r=>I(r.Date,b)&&homeAtt(r)).map(r=>[r.Date,r.Name_Presenter,r.Fellowship_Area].join('|'))).size],
 ['Ready For Sathvartha',b=>stg('Ready For Sathvartha').filter(r=>I(r.Date,b)).length],
 ['Attended Sathvartha',b=>stg('Attended Sathvartha').filter(r=>I(r.Date,b)).length],
 ['In Fellowship',b=>stg('In Fellowship').filter(r=>I(r.Date,b)).length],
@@ -195,6 +199,9 @@ return`<div class="card" style="margin-bottom:14px"><div class="row" style="marg
 <div class="card"><h2>My Sathvartha journey</h2>${STG.map((k,i)=>`<div class="bar"><em>${k}</em><i style="width:${jr[i]/Math.max(1,...jr)*100}%"></i>${jr[i]}</div>`).join('')}</div>`}
 function setMe(){const v=$('#me_s').value;if(!v)return;cfg.me=v;evf=v;saveCfg();render()}
 function changeMe(){cfg.me='';evf='';saveCfg();render()}
+function openF(k,i){openF0(k,i);if(k=='home'){const s=$('#f_Invite_Status'),R=i!=null?db.home[i]:null;if(s){if(R&&!R.Invite_Status)s.value='Attended';s.onchange=homeUi;homeUi()}}}
+function homeUi(){const s=$('#f_Invite_Status'),o=$('#f_Outcome');if(!s||!o)return;const on=s.value=='Attended';o.disabled=!on;if(!on)o.value='';else if(!o.value)o.focus()}
+function hmMark(i,v){if(v=='Attended'){openF('home',i);$('#f_Invite_Status').value='Attended';homeUi();return}const r=db.home[i];if(!r)return;r.Invite_Status=v;r.Outcome='';persist();flash='Marked '+v.toLowerCase();render()}
 function quickFollow(id){openF('follow');const s=$('#f_Source');s.value=db.fresh.some(r=>r.Contact_ID==id)?'Fresh Contacts':db.home.some(r=>r.Contact_ID==id)?'Home Mission':'Direct Follow Up';fsrc(1,id);$('#f_Contact_ID').value=id;fill(id)}
 
 function evs(){return`<div class="row"><input id="evn" placeholder="Evangelist name" style="flex:1;min-width:140px"><button class="btn" onclick="addEv()">+ Add</button><button class="btn g" onclick="impTab='evs';$('#imp').click()">Upload list</button><button class="btn g" onclick="pullEv()">Pull from records</button></div>
@@ -251,7 +258,7 @@ function setEvm(i,f,v){const n=db.evs[i];db.evm=db.evm||{};(db.evm[n]=db.evm[n]|
 const REGS=['Whitefield','Marathahalli','HAL'];
 function regM(reg,inR,ev){
 const EF=ev===undefined?evf:ev,ok=r=>!reg||fOf(r)==reg,E=r=>!EF||evOf(r)==EF,A=a=>a.filter(r=>ok(r)&&E(r));
-const hm=new Set(A(db.home).filter(r=>inR(r.Date)).map(r=>[r.Date,r.Name_Presenter,r.Fellowship_Area].join('|'))).size;
+const hm=new Set(A(db.home).filter(r=>inR(r.Date)&&homeAtt(r)).map(r=>[r.Date,r.Name_Presenter,r.Fellowship_Area].join('|'))).size;
 const st=s=>A(db.sath).filter(r=>r.Stage==s&&inR(r.Date)).length,m={};
 A(db.sath).forEach(r=>{if(!r.Date)return;const k=r.Stage=='In Fellowship'?'f':r.Stage=='Attended Sathvartha'?'a':'';if(!k)return;const c=m[r.Contact_ID]||(m[r.Contact_ID]={});if(!c[k]||r.Date<c[k])c[k]=r.Date});
 const c3=Object.values(m).map(c=>add3(c.f||c.a)).filter(e=>e<=iso(0)&&inR(e)).length;
@@ -277,15 +284,30 @@ function sortEv(){db.evs.sort((a,b)=>a.localeCompare(b));persist()}
 function addEv(){const v=$('#evn').value.trim();if(v&&!db.evs.includes(v)){db.evs.push(v);sortEv()}render()}
 function delEv(i){db.evs.splice(i,1);persist();render()}
 function pullEv(){let n=0;KEYS.forEach(k=>db[k].forEach(r=>['Evg','Name_Presenter','First_Coming_Evangelist','Second_Coming_Evangelist'].forEach(f=>{const v=(r[f]||'').trim();if(v&&!db.evs.includes(v)){db.evs.push(v);n++}})));sortEv();flash='Added '+n+' name(s) from existing records';render()}
-async function onImp(inp){const f=inp.files[0];inp.value='';if(!f)return;const R=parseCSV((await f.text()).replace(/^\uFEFF/,''));
+async function onImp(inp){const f=inp.files[0];inp.value='';if(!f)return;await importText((await f.text()).replace(/^﻿/,''))}
+const IMP_AL={Name:['nameofcontact','contactname','fullname','person','nameofperson'],Mobile:['mobilenumber','mobileno','phone','phoneno','phonenumber','contactnumber'],Evg:['nameofevangelist','evangelist','evangelistname','evgname'],Fellowship:['fellowshipname','fellowshiparea','region'],Fellowship_Area:['fellowship','fellowshipname','region'],Reference:['source','referencetype','contactsource'],Referred_By:['referredby','referrer','referrername','nameofreferrer'],Referrer_Mobile:['referrermobile','referrerphone'],Language:['languages','lang'],Date:['dateofcontact','contactdate'],Status:['contactstatus'],Name_Presenter:['presenter','namepresenter']};
+function normDate(s){s=String(s||'').trim();let m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');m=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/.exec(s);if(m){const y=m[3].length==2?'20'+m[3]:m[3];return y+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')}return s}
+const digits=s=>String(s||'').replace(/\D/g,'').slice(-10);
+async function importText(text){const R=parseCSV(text).filter(r=>r.some(c=>String(c).trim()));
+if(!R.length){flash='The file is empty';render();return}
 if(impTab=='evs'){let n=0;R.forEach((r,i)=>{const v=(r[0]||'').trim();if(!v||(i==0&&/^(name|evangelist|evangelists|evangelist name)$/i.test(v)))return;if(!db.evs.includes(v)){db.evs.push(v);n++}});sortEv();flash='Imported '+n+' evangelist(s)'}
-else{const S=SCH[impTab],nz=h=>h.toLowerCase().replace(/[^a-z0-9]/g,''),H=R[0].map(nz),ix=S.f.map(([n])=>H.indexOf(nz(n)));
+else{const S=SCH[impTab],nz=h=>h.toLowerCase().replace(/[^a-z0-9]/g,''),H=R[0].map(nz),used=new Set();
+const ix=S.f.map(([n])=>{let i=H.indexOf(nz(n));if(i<0)for(const al of(IMP_AL[n]||[])){const j=H.indexOf(al);if(j>=0&&!used.has(j)){i=j;break}}if(i>=0)used.add(i);return i});
 if(ix.every(i=>i<0))flash='No matching column headings found. Tap Template to see the expected format.';
-else{let n=0;R.slice(1).forEach(row=>{const r={};S.f.forEach(([nm],j)=>{r[nm]=ix[j]>=0?(row[ix[j]]||'').trim():''});
-if(['fresh','home','travel'].includes(impTab)&&!r.Name)return;
+else{let n=0,dup=0,skip=0;const byId=['follow','content','sath'].includes(impTab),key=r=>byId&&r.Contact_ID?[r.Contact_ID,r.Date,r.Status||r.Stage||''].join('|'):[String(r.Name||'').toLowerCase(),digits(r.Mobile),r.Date].join('|'),seen=new Set(db[impTab].map(key));
+R.slice(1).forEach(row=>{const r={};S.f.forEach(([nm,t],j)=>{let v=ix[j]>=0?(row[ix[j]]||'').trim():'';if(t=='date'||nm=='Date')v=normDate(v);r[nm]=v});
+if(['fresh','home','travel'].includes(impTab)&&!r.Name){skip++;return}
+if(impTab=='follow'&&!r.Contact_ID){if(!r.Name&&!r.Mobile){skip++;return}const c=digits(r.Mobile)&&contacts().find(x=>digits(x.Mobile)==digits(r.Mobile));if(c){r.Contact_ID=c.Contact_ID;if(!r.Source)r.Source=db.fresh.some(x=>x.Contact_ID==c.Contact_ID)?'Fresh Contacts':db.home.some(x=>x.Contact_ID==c.Contact_ID)?'Home Mission':'Direct Follow Up'}else{r.Contact_ID=nextId('','DF');if(!r.Source)r.Source='Direct Follow Up'}}
+if(LF()&&['Fellowship','Fellowship_Area'].some(f=>f in r))['Fellowship','Fellowship_Area'].forEach(f=>{if(f in r)r[f]=LF()});
+if(impTab=='home'&&!r.Invite_Status)r.Invite_Status='Attended';
+if(key(r)!=''&&seen.has(key(r))&&(r.Contact_ID||r.Name)){dup++;return}
 S.f.forEach(([nm,t])=>{if(t=='id'&&!r[nm])r[nm]=impTab=='home'?nextId('','HM'):nextId(r.Reference);if(t=='sl'&&!r[nm])r[nm]=String(Math.max(0,...db.travel.map(x=>+x.Sl_No||0))+1);if(t=='lid'&&!r[nm])r[nm]=nextLib()});
-db[impTab].push(r);n++});flash='Imported '+n+' row(s) into '+S.t}}
+seen.add(key(r));db[impTab].push(r);n++});flash='Imported '+n+' row(s) into '+S.t+(dup?' · skipped '+dup+' already in the app':'')+(skip?' · '+skip+' row(s) without a name were left out':'')}}
 persist();render()}
+async function impSheet(){const u=prompt('Paste the Google Sheet link.\n\nFirst share the sheet: Share → General access → "Anyone with the link" → Viewer. To import one tab, open that tab before copying the link.');if(!u)return;
+const m=/\/d\/([a-zA-Z0-9_-]+)/.exec(u);if(!m){alert('That does not look like a Google Sheets link.');return}const g=/[#&?]gid=(\d+)/.exec(u);
+try{const r=await fetch('https://docs.google.com/spreadsheets/d/'+m[1]+'/gviz/tq?tqx=out:csv'+(g?'&gid='+g[1]:''));const t=await r.text();if(!r.ok||/^\s*<(!doctype|html)/i.test(t))throw new Error('blocked');await importText(t)}
+catch(e){alert('Could not read that sheet.\n\n• Check it is shared as "Anyone with the link – Viewer".\n• Or download the tab (File → Download → CSV) and use "Import CSV".')}}
 let snap={},busy=0,syncMsg='';
 try{snap=JSON.parse(localStorage.getItem('zs_snap'))||{}}catch(e){}
 const SK=[...KEYS,'evs'],rowsOf=k=>k=='evs'?db.evs.map(n=>({_id:'ev:'+n,Name:n,Email:((db.evm||{})[n]||{}).Email||'',Mobile:((db.evm||{})[n]||{}).Mobile||''})):db[k];
@@ -301,7 +323,7 @@ try{const S=(await api()).sheets,n=Object.values(S).reduce((a,x)=>a+x.length,0);
 async function pullNow(){await flush();await pull()}
 async function upNow(){snap={};await flush(1)}
 function disc(){cfg.api='';cfg.key='';saveCfg();render()}
-const BUILD='2026-11-06 · Evg Coord login, month and date-range reports';
+const BUILD='2026-11-07 · Home Mission invites, Google Sheet import, Evg Coord login';
 function syncTab(){return syncTab0()+linkCard()+roleCard()+`<div style="text-align:center;color:var(--mu);font-size:11px;margin:14px 0">App version: ${BUILD}</div>`}
 function syncTab0(){if(cfg.api&&!MANAGER)return`<div class="card"><h2>✓ You're connected</h2><p style="color:var(--mu);font-size:13px;margin:0">Everything you enter is saved to the team sheet automatically. Nothing to set up here.</p><div id="sm" style="font-size:12px;color:var(--mu);margin-top:8px">${esc(syncMsg)||'Connected'}</div><div class="row" style="margin:12px 0 0"><button class="btn g" onclick="pullNow()">Sync now</button></div></div><details style="margin-top:12px"><summary style="color:var(--mu);font-size:12px;cursor:pointer">Advanced</summary>${syncTab00()}</details>`;return syncTab00()}
 let FK=null;
@@ -361,7 +383,7 @@ const second=[...db.follow,...db.content].filter(x=>x.Contact_ID==id&&x.Evg&&x.E
 return{Sl_No:String(Math.max(0,...db.travel.map(t=>+t.Sl_No||0))+1),Fellowship_Area_Name:r.Fellowship||fr.Fellowship||hm.Fellowship_Area||'',Name:r.Name||fr.Name||hm.Name||'',Age:'',Gender:'',Address:'',Phone_No:r.Mobile||fr.Mobile||hm.Mobile||'',Reference_Name:fr.Referred_By?fr.Referred_By+(fr.Referrer_Fellowship?' ('+fr.Referrer_Fellowship+')':''):(fr.Reference||''),First_Coming_Evangelist:first,Second_Coming_Evangelist:second,Denomination:'',Religion:'',Onward_Train_Details:'',Arrival_Date_Time:'',Return_Train_Details:'',Departure_Date_Time:'',Language:hm.Language||fr.Language||db.follow.concat(db.content).filter(x=>x.Contact_ID==id&&x.Language).map(x=>x.Language).pop()||'',Contact_ID:id}}
 function tbar(){if(!MANAGER)return'<div class="card" style="margin-bottom:12px;color:var(--mu);font-size:12px">Complete every detail. The Evg Coord checks ✓ each record and sends it to the coordinator.</div>';const all=db.travel.filter(t=>t.Checked=='Yes').map(tmsg).join('\n\n———\n\n'),b='style="text-decoration:none"';
 return`<div class="row"><input placeholder="Coordinator WhatsApp (e.g. 919876543210)" value="${esc(cfg.wa||'')}" onchange="cfg.wa=this.value.replace(/[^0-9]/g,'');saveCfg();render()" style="flex:1;min-width:150px"><input type="email" placeholder="Coordinator email" value="${esc(cfg.em||'')}" onchange="cfg.em=this.value.trim();saveCfg();render()" style="flex:1;min-width:150px"><a class="btn g" ${b} target="_blank" href="https://wa.me/${cfg.wa||''}?text=${encodeURIComponent(all)}">WhatsApp all checked</a><button class="btn g" onclick="mailTravel()">Email all checked</button></div>`}
-function openF(k,i){resetIds();cur=k;ed=i??null;const S=SCH[k],R=ed!=null?db[k][ed]:null;$('#dt').textContent=(R?'Edit · ':'Add · ')+S.t;
+function openF0(k,i){resetIds();cur=k;ed=i??null;const S=SCH[k],R=ed!=null?db[k][ed]:null;$('#dt').textContent=(R?'Edit · ':'Add · ')+S.t;
 $('#df').innerHTML=S.f.map(([n,t,o])=>{const id='f_'+n,v=R?R[n]??'':(t=='ev'&&cfg.me&&['Evg','Name_Presenter','First_Coming_Evangelist'].includes(n)?cfg.me:''),l=`<label>${n.replace(/_/g,' ')}</label>`;
 if(t=='id')return l+`<input id="${id}" value="${R?v:k=='home'?nextId('','HM'):nextId(SRC[0])}" readonly>`;
 if(t=='sl')return l+`<input id="${id}" value="${R?v:Math.max(0,...db.travel.map(r=>+r.Sl_No||0))+1}" readonly>`;
@@ -384,10 +406,11 @@ if(SCH[cur].f.some(f=>f[1]=='cid')&&!r.Contact_ID){alert('Enter a Contact ID');r
 if(cur=='follow'&&ed==null){const L=r.Source=='Fresh Contacts'?db.fresh:r.Source=='Home Mission'?db.home:null;
 if(L&&!L.some(x=>x.Contact_ID==r.Contact_ID)){alert('Pick the contact from the '+r.Source+' list');return}
 if(!L&&!contacts().some(c=>c.Contact_ID==r.Contact_ID)&&!r.Name){alert('Enter the name of the new contact');return}}
-if((cur=='fresh'||cur=='home'||cur=='travel')&&!r.Name){alert('Name is required');return}if(LF())['Fellowship','Fellowship_Area','Fellowship_Area_Name'].forEach(n=>{if(n in r)r[n]=LF()});
+if((cur=='fresh'||cur=='home'||cur=='travel')&&!r.Name){alert('Name is required');return}if(cur=='home'){if(r.Invite_Status=='Attended'&&!r.Outcome){alert('Choose the outcome: Positive, Neutral or Negative');return}if(r.Invite_Status!='Attended')r.Outcome=''}if(LF())['Fellowship','Fellowship_Area','Fellowship_Area_Name'].forEach(n=>{if(n in r)r[n]=LF()});
 if(cur=='lib'){if(!r.Title||!r.Content){alert('Title and content / link are required');return}r.Updated=iso(0)}
 let made=-1;
 if(ed!=null){const o=db[cur][ed];r._id=o._id;if(cur=='travel'&&o.Checked=='Yes'&&!SCH.travel.f.some(([n])=>(o[n]||'')!==(r[n]||''))){r.Checked=o.Checked;r.Checked_By=o.Checked_By;r.Checked_On=o.Checked_On}db[cur][ed]=r}else db[cur].push(r);
+if(cur=='home'&&r.Invite_Status=='Attended'&&r.Outcome=='Positive'&&r.Contact_ID&&!db.follow.some(f=>f.Contact_ID==r.Contact_ID)){db.follow.push({Source:'Home Mission',Contact_ID:r.Contact_ID,Type:'Call',Date:r.Date||iso(0),Name:r.Name,Mobile:r.Mobile,Language:r.Language,Referred_By:r.Referred_By,Referrer_Fellowship:r.Referrer_Fellowship,Fellowship:r.Fellowship_Area,Evg:r.Name_Presenter||'',Status:'Positive For Next Session',Follow_Up_Topics:''});flash='Positive — added to Follow Ups'}
 if(cur=='sath'&&r.Stage=='Ready For Sathvartha'&&!db.travel.some(t=>t.Contact_ID==r.Contact_ID)){db.travel.push(mkTravel(r));made=db.travel.length-1}
 if(r.Status&&r.Contact_ID&&cur!='travel'){const id=r.Contact_ID,s=r.Status,c=contacts().find(x=>x.Contact_ID==id)||{},d=r.Date||iso(0);
 const addSt=g=>{if(!db.sath.some(x=>x.Contact_ID==id&&x.Stage==g))db.sath.push({Contact_ID:id,Stage:g,Date:d,Name:r.Name||c.Name||'',Mobile:r.Mobile||c.Mobile||'',Fellowship:fOf(r)||c.Fellowship||'',Evg:r.Evg||c.Evg||''})};
@@ -433,3 +456,4 @@ setInterval(()=>{if(cfg.api&&!dlg.open&&!busy)flush().then(pull)},30000);
 window.__zsOK=1;
 addEventListener('visibilitychange',()=>{if(!document.hidden&&cfg.api&&!dlg.open&&!busy)flush().then(pull)});
 </script></body></html>
+Displaying index.html.
